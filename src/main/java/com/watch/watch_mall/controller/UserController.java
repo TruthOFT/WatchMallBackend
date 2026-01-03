@@ -10,6 +10,7 @@ import com.watch.watch_mall.model.dto.user.*;
 import com.watch.watch_mall.model.entity.User;
 import com.watch.watch_mall.model.vo.LoginUserVO;
 import com.watch.watch_mall.model.vo.UserVO;
+import com.watch.watch_mall.service.FileService;
 import com.watch.watch_mall.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 import static com.watch.watch_mall.constant.UserConstant.SALT;
@@ -32,6 +34,9 @@ import static com.watch.watch_mall.constant.UserConstant.SALT;
 public class UserController {
     @Resource
     private UserService userService;
+
+    @Resource
+    private FileService fileService;
 
     /**
      * 用户注册
@@ -216,5 +221,21 @@ public class UserController {
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    @PostMapping("/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile file, HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        if (loginUser == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        String path = fileService.uploadFile(file, "avatar");
+        User loginUser1 = userService.getLoginUser(request);
+        if (loginUser1 == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        loginUser1.setAvatarUrl(path);
+        boolean b = userService.updateById(loginUser1);
+        return ResultUtils.success(path);
     }
 }
