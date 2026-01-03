@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -57,6 +58,8 @@ public class User implements Serializable {
     private String avatarUrl;
 
     private Integer gender;
+    private BigDecimal balance;
+
 
     /**
      * 

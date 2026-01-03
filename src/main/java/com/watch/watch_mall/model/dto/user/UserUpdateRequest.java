@@ -3,6 +3,7 @@ package com.watch.watch_mall.model.dto.user;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * 用户更新请求
@@ -35,6 +36,8 @@ public class UserUpdateRequest implements Serializable {
      * 用户角色：user/admin/ban
      */
     private String userRole;
+
+    private BigDecimal balance;
 
     private static final long serialVersionUID = 1L;
 }
