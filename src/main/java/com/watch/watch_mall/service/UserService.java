@@ -5,6 +5,7 @@ import com.watch.watch_mall.model.entity.User;
 import com.watch.watch_mall.model.vo.LoginUserVO;
 import com.watch.watch_mall.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
 * @author Lu
@@ -15,7 +16,7 @@ public interface UserService extends IService<User> {
 
     long userRegister(String userAccount, String userPassword, String checkPassword);
 
-    LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    LoginUserVO userLogin(String userAccount, String userPassword, Boolean rememberMe, HttpServletRequest request, HttpServletResponse response);
 
     User getLoginUser(HttpServletRequest request);
 

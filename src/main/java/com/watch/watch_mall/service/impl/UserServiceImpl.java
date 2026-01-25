@@ -10,7 +10,9 @@ import com.watch.watch_mall.model.vo.LoginUserVO;
 import com.watch.watch_mall.model.vo.UserVO;
 import com.watch.watch_mall.service.UserService;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -75,7 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public LoginUserVO userLogin(String userAccount, String userPassword, Boolean rememberMe, HttpServletRequest request, HttpServletResponse response) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -100,6 +102,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 3. 记录用户的登录态
         request.getSession().setAttribute(USER_LOGIN_STATE, user);
+        if (rememberMe != null && rememberMe) {
+            int maxAgeSeconds = 7 * 24 * 60 * 60;
+            Cookie cookie = new Cookie("SESSION", request.getSession().getId());
+            cookie.setMaxAge(maxAgeSeconds);
+            cookie.setPath("/");
+            cookie.setHttpOnly(true);
+            request.getSession().setMaxInactiveInterval(maxAgeSeconds);
+            response.addCookie(cookie);
+        }
         return getHandledUser(user);
     }
 
