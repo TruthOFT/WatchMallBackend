@@ -14,6 +14,7 @@ import com.watch.watch_mall.service.FileService;
 import com.watch.watch_mall.service.UserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -67,16 +68,17 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
-    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request, HttpServletResponse response) {
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
+        Boolean rememberMe = userLoginRequest.getRememberMe();
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, rememberMe, request, response);
         return ResultUtils.success(loginUserVO);
     }
 
@@ -120,7 +122,7 @@ public class UserController {
      */
     @PostMapping("/add")
     public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest, HttpServletRequest request) {
-        if (userAddRequest == null) {
+        if (userAddRequest == null || request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = new User();
@@ -179,7 +181,7 @@ public class UserController {
      */
     @GetMapping("/get")
     public BaseResponse<User> getUserById(long id, HttpServletRequest request) {
-        if (id <= 0) {
+        if (id <= 0 || request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User user = userService.getById(id);
@@ -235,7 +237,7 @@ public class UserController {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         loginUser1.setAvatarUrl(path);
-        boolean b = userService.updateById(loginUser1);
+        userService.updateById(loginUser1);
         return ResultUtils.success(path);
     }
 }
