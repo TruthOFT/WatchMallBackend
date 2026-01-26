@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.watch.watch_mall.mapper.ProductMapper">
+
+    <resultMap id="BaseResultMap" type="com.watch.watch_mall.model.entity.Product">
+            <id property="id" column="id" />
+            <result property="productName" column="productName" />
+            <result property="description" column="description" />
+            <result property="imageUrl" column="imageUrl" />
+            <result property="tag" column="tag" />
+            <result property="price" column="price" />
+            <result property="stock" column="stock" />
+            <result property="title" column="title" />
+            <result property="isHero" column="isHero" />
+            <result property="isBanner" column="isBanner" />
+            <result property="isChoice" column="isChoice" />
+            <result property="isRec" column="isRec" />
+            <result property="feature" column="feature" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,productName,description,imageUrl,tag,price,
+        stock,title,isHero,isBanner,isChoice,
+        isRec,feature,createTime,updateTime,isDelete
+    </sql>
+</mapper>
