@@ -45,8 +45,3 @@ knife4j:
   enable: true
   setting:
     language: zh_cn
-
-# 自定义文件上传路径
-file:
-  upload-path: D:/Watch/uploads/ # 注意：最后要加斜杠。如果是Linux，写成 /usr/local/uploads/
-
