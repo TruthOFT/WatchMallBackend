@@ -10,22 +10,20 @@
             <result property="description" column="description" />
             <result property="imageUrl" column="imageUrl" />
             <result property="tag" column="tag" />
-            <result property="price" column="price" />
-            <result property="stock" column="stock" />
             <result property="title" column="title" />
+            <result property="feature" column="feature" />
             <result property="isHero" column="isHero" />
             <result property="isBanner" column="isBanner" />
             <result property="isChoice" column="isChoice" />
             <result property="isRec" column="isRec" />
-            <result property="feature" column="feature" />
             <result property="createTime" column="createTime" />
             <result property="updateTime" column="updateTime" />
             <result property="isDelete" column="isDelete" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,productName,description,imageUrl,tag,price,
-        stock,title,isHero,isBanner,isChoice,
-        isRec,feature,createTime,updateTime,isDelete
+        id,productName,description,imageUrl,tag,title,
+        feature,isHero,isBanner,isChoice,isRec,
+        createTime,updateTime,isDelete
     </sql>
 </mapper>

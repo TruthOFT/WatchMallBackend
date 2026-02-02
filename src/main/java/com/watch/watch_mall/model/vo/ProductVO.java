@@ -1,11 +1,13 @@
 package com.watch.watch_mall.model.vo;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.watch.watch_mall.model.inner_data.FeatureItem;
 import lombok.Data;
 
-import java.io.Serial;
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class ProductVO implements Serializable {
     /**
      * 
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -45,50 +47,13 @@ public class ProductVO implements Serializable {
     /**
      * 
      */
-    private BigDecimal price;
-
-    /**
-     * 
-     */
-    private Integer stock;
-
-    /**
-     * 
-     */
     private String title;
 
     /**
      * 
      */
-    private String categoryName;
+    private List<FeatureItem> feature;
 
-    /**
-     * 
-     */
-    private Integer isHero;
-
-    /**
-     * 
-     */
-    private Integer isBanner;
-
-    /**
-     * 
-     */
-    private Integer isChoice;
-
-    /**
-     * 
-     */
-    private Integer isRec;
-
-    /**
-     * 
-     */
-    private List<String> feature;
-
-
-    @Serial
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

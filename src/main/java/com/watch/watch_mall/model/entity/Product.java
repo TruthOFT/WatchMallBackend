@@ -1,10 +1,12 @@
 package com.watch.watch_mall.model.entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.Date;
 
 /**
@@ -17,7 +19,7 @@ public class Product implements Serializable {
     /**
      * 
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -43,17 +45,12 @@ public class Product implements Serializable {
     /**
      * 
      */
-    private BigDecimal price;
-
-    /**
-     * 
-     */
-    private Integer stock;
-
-    /**
-     * 
-     */
     private String title;
+
+    /**
+     * 
+     */
+    private String feature;
 
     /**
      * 
@@ -78,11 +75,6 @@ public class Product implements Serializable {
     /**
      * 
      */
-    private String feature;
-
-    /**
-     * 
-     */
     private Date createTime;
 
     /**
@@ -93,7 +85,6 @@ public class Product implements Serializable {
     /**
      * 
      */
-    @TableLogic
     private Integer isDelete;
 
     @TableField(exist = false)
