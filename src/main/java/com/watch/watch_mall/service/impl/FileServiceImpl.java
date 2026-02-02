@@ -45,7 +45,7 @@ public class FileServiceImpl implements FileService {
             File dest = new File(dir, fileName);
             file.transferTo(dest);
 
-            return contextPath + "/uploads/" + biz + "/" + fileName;
+            return contextPath + "/upload/" + biz + "/" + fileName;
 
         } catch (IOException e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件保存失败");
