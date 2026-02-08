@@ -7,13 +7,11 @@ import com.watch.watch_mall.common.ResultUtils;
 import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.entity.Product;
 import com.watch.watch_mall.model.vo.HomeProductVO;
-import com.watch.watch_mall.service.FileService;
 import com.watch.watch_mall.service.ProductService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -30,7 +28,7 @@ public class ProductController {
      * @return
      */
     @PostMapping("/add")
-    public BaseResponse<Boolean> addProduct(@RequestBody Product product, @RequestParam(value = "file", required = false) MultipartFile file) {
+    public BaseResponse<Boolean> addProduct(@RequestPart("product") Product product, @RequestPart("file") MultipartFile file) {
         return ResultUtils.success(productService.addProduct(product, file));
     }
 

@@ -1,12 +1,9 @@
 package com.watch.watch_mall.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.watch.watch_mall.model.entity.Product;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.watch.watch_mall.model.vo.HomeProductVO;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 /**
 * @author Truth
