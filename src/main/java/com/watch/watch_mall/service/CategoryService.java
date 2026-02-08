@@ -3,7 +3,6 @@ package com.watch.watch_mall.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.watch.watch_mall.model.entity.Category;
 import com.watch.watch_mall.model.vo.CategoryVO;
-import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 
 import java.util.List;
 

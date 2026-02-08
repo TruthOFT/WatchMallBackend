@@ -6,10 +6,8 @@ import com.watch.watch_mall.model.entity.Category;
 import com.watch.watch_mall.model.vo.CategoryVO;
 import com.watch.watch_mall.service.CategoryService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 
-import java.beans.BeanProperty;
 import java.util.List;
 
 /**
