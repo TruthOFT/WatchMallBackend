@@ -1,49 +1,74 @@
 package com.watch.watch_mall.model.vo;
 
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 用户视图（脱敏）
- *
-
+ * 
+ * @TableName user
  */
+@TableName(value ="user")
 @Data
 public class UserVO implements Serializable {
-
     /**
-     * id
+     * 
      */
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
-     * 用户昵称
+     * 
      */
-    private String userName;
+    private String username;
 
     /**
-     * 用户头像
+     * 
      */
-    private String userAvatar;
+    private String userAccount;
 
     /**
-     * 用户简介
+     * 
      */
-    private String userProfile;
+    private String email;
 
     /**
-     * 用户角色：user/admin/ban
+     * 
      */
-    private String userRole;
+    private String userPassword;
 
     /**
-     * 创建时间
+     * 
+     */
+    private String phone;
+
+    /**
+     * 
      */
     private Date createTime;
 
-    private Long balance;
+    /**
+     * 
+     */
+    private Date updateTime;
 
+    private String avatarUrl;
+
+    private Integer gender;
+    private BigDecimal balance;
+
+
+    /**
+     * 
+     */
+    @TableLogic
+    private Integer isDelete;
+
+    Integer userRole;
+
+    @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }
