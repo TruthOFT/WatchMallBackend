@@ -1,31 +1,26 @@
 package com.watch.watch_mall.service.impl;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.TypeReference;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.watch.watch_mall.common.ErrorCode;
 import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.entity.Product;
+import com.watch.watch_mall.model.entity.ProductImages;
 import com.watch.watch_mall.model.inner_data.FeatureItem;
 import com.watch.watch_mall.model.vo.HomeProductVO;
 import com.watch.watch_mall.model.vo.ProductVO;
 import com.watch.watch_mall.service.CategoryService;
 import com.watch.watch_mall.service.FileService;
+import com.watch.watch_mall.service.ProductImagesService;
 import com.watch.watch_mall.service.ProductService;
 import com.watch.watch_mall.mapper.ProductMapper;
 import jakarta.annotation.Resource;
-import org.apache.ibatis.annotations.Select;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.watch.watch_mall.constant.CommonConstant.*;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.watch.watch_mall.constant.CommonConstant.BIZ_PRODUCT;
 
@@ -44,15 +39,27 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     @Resource
     FileService fileService;
 
+    @Resource
+    ProductMapper productMapper;
+
+    @Resource
+    ProductImagesService productImagesService;
+
     @Override
     public boolean addProduct(Product product, MultipartFile file) {
         ThrowUtils.throwIf(product == null, ErrorCode.PARAMS_ERROR);
-        String filePath = null;
-        if (file != null) {
-            filePath = fileService.uploadFile(file, BIZ_PRODUCT);
+        boolean save = this.save(product);
+        if (!save) {
+            return false;
         }
-        product.setImageUrl(filePath);
-        return this.save(product);
+        String filePath = "";
+        if (file != null) {
+            filePath = uploadFile(file);
+        }
+        ProductImages productImages = new ProductImages();
+        productImages.setProductId(product.getId());
+        productImages.setUrl(filePath);
+        return productImagesService.save(productImages);
     }
 
     @Override
@@ -65,45 +72,27 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product>
     public HomeProductVO getHomeProductVO() {
         HomeProductVO homeProductVO = new HomeProductVO();
         homeProductVO.setCategoryVOList(categoryService.getCategoryVOList());
-        QueryWrapper<Product> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("isHero", 1);
-        Product one = this.getOne(queryWrapper);
-        if (one != null) {
-            ProductVO productVO = new ProductVO();
-            BeanUtils.copyProperties(one, productVO);
-            List<FeatureItem> featureItemList = JSON.parseObject(one.getFeature(), new TypeReference<List<FeatureItem>>() {
-            });
-            productVO.setFeature(featureItemList);
-            homeProductVO.setProductVO(productVO);
-        }
-        List<ProductVO> bannerLst = this.list().stream().filter(product -> product.getIsBanner() == 1).map(product -> {
+        // 推荐列表
+        List<ProductVO> recLst = productMapper.getRecommendProducts().stream().map(product -> {
             ProductVO productVO = new ProductVO();
             BeanUtils.copyProperties(product, productVO);
-            List<FeatureItem> featureItemList = JSON.parseObject(product.getFeature(), new TypeReference<List<FeatureItem>>() {
-            });
-            productVO.setFeature(featureItemList);
-            return productVO;
-        }).toList();
-        homeProductVO.setBannerList(bannerLst);
-        List<ProductVO> choiceLst = this.list().stream().filter(product -> product.getIsChoice() == 1).map(product -> {
-            ProductVO productVO = new ProductVO();
-            BeanUtils.copyProperties(product, productVO);
-            List<FeatureItem> featureItemList = JSON.parseObject(product.getFeature(), new TypeReference<List<FeatureItem>>() {
-            });
-            productVO.setFeature(featureItemList);
-            return productVO;
-        }).toList();
-        homeProductVO.setChoiceList(choiceLst);
-        // 推荐
-        List<ProductVO> recLst = this.list().stream().filter(product -> product.getIsRec() == 1).map(product -> {
-            ProductVO productVO = new ProductVO();
-            BeanUtils.copyProperties(product, productVO);
-            List<FeatureItem> featureItemList = JSON.parseObject(product.getFeature(), new TypeReference<List<FeatureItem>>() {
-            });
-            productVO.setFeature(featureItemList);
+            List<FeatureItem> featureItems = JSON.parseArray(product.getFeature(), FeatureItem.class);
+            productVO.setFeatureLst(featureItems);
             return productVO;
         }).toList();
         homeProductVO.setRecommendList(recLst);
+        // banner
+        List<ProductVO> bannerLst = productMapper.getBannerProducts().stream().map(product -> {
+            ProductVO productVO = new ProductVO();
+            BeanUtils.copyProperties(product, productVO);
+            List<FeatureItem> featureItems = JSON.parseArray(product.getFeature(), FeatureItem.class);
+            productVO.setFeatureLst(featureItems);
+            return productVO;
+        }).toList();
+        homeProductVO.setBannerList(bannerLst);
+        ProductVO heroProduct = productMapper.getHeroProduct();
+        heroProduct.setFeatureLst(JSON.parseArray(heroProduct.getFeature(), FeatureItem.class));
+        homeProductVO.setProductVO(heroProduct);
         return homeProductVO;
     }
 }
