@@ -157,15 +157,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return null;
         }
         LoginUserVO handledUser = new LoginUserVO();
-        handledUser.setId(user.getId());
-        handledUser.setUsername(user.getUsername());
-        handledUser.setUserAccount(user.getUserAccount());
-        handledUser.setAvatarUrl(user.getAvatarUrl());
-        handledUser.setGender(user.getGender());
-        handledUser.setPhone(user.getPhone());
-        handledUser.setEmail(user.getEmail());
-        handledUser.setCreateTime(user.getCreateTime());
-        handledUser.setUpdateTime(user.getUpdateTime());
+        BeanUtils.copyProperties(user, handledUser);
         return handledUser;
     }
 
