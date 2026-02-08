@@ -1,23 +1,21 @@
 package com.watch.watch_mall.model.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * 
+ * 商品主表
  * @TableName product
  */
 @TableName(value ="product")
 @Data
 public class Product implements Serializable {
     /**
-     * 
+     * 商品ID (雪花算法)
      */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
@@ -25,22 +23,7 @@ public class Product implements Serializable {
     /**
      * 
      */
-    private String productName;
-
-    /**
-     * 
-     */
-    private String description;
-
-    /**
-     * 
-     */
-    private String imageUrl;
-
-    /**
-     * 
-     */
-    private String tag;
+    private String name;
 
     /**
      * 
@@ -50,7 +33,27 @@ public class Product implements Serializable {
     /**
      * 
      */
+    private Long brandId;
+
+    /**
+     * 
+     */
+    private String description;
+
+    /**
+     * JSON规格
+     */
     private String feature;
+
+    /**
+     * 
+     */
+    private String tags;
+
+    /**
+     * 因源数据缺失，默认为0.00
+     */
+    private BigDecimal price;
 
     /**
      * 
@@ -65,12 +68,17 @@ public class Product implements Serializable {
     /**
      * 
      */
-    private Integer isChoice;
+    private Integer isRec;
 
     /**
      * 
      */
-    private Integer isRec;
+    private Integer status;
+
+    /**
+     * 乐观锁
+     */
+    private Integer version;
 
     /**
      * 
@@ -85,6 +93,7 @@ public class Product implements Serializable {
     /**
      * 
      */
+    @TableLogic
     private Integer isDelete;
 
     @TableField(exist = false)

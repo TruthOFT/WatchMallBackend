@@ -7,7 +7,7 @@ import com.watch.watch_mall.model.entity.Category;
 * @author Truth
 * @description 针对表【category】的数据库操作Mapper
 * @createDate 2026-01-11 13:29:58
-* @Entity generator.domain.Category
+* @Entity com.watch.watch_mall.model.entity.Category
 */
 public interface CategoryMapper extends BaseMapper<Category> {
 

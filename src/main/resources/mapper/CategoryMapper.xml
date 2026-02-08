@@ -5,19 +5,20 @@
 <mapper namespace="com.watch.watch_mall.mapper.CategoryMapper">
 
     <resultMap id="BaseResultMap" type="com.watch.watch_mall.model.entity.Category">
-            <id property="id" column="id" jdbcType="BIGINT"/>
-            <result property="categoryName" column="categoryName" jdbcType="VARCHAR"/>
-            <result property="categoryImgUrl" column="categoryImgUrl" jdbcType="VARCHAR"/>
-            <result property="description" column="description" jdbcType="VARCHAR"/>
-            <result property="isShow" column="isShow" jdbcType="TINYINT"/>
-            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
-            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
-            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+            <id property="id" column="id" />
+            <result property="name" column="name" />
+            <result property="parentId" column="parentId" />
+            <result property="icon" column="icon" />
+            <result property="description" column="description" />
+            <result property="sortOrder" column="sortOrder" />
+            <result property="isShow" column="isShow" />
+            <result property="createTime" column="createTime" />
+            <result property="updateTime" column="updateTime" />
+            <result property="isDelete" column="isDelete" />
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,categoryName,categoryImgUrl,
-        description,isShow,createTime,
-        updateTime,isDelete
+        id,name,parentId,icon,description,sortOrder,
+        isShow,createTime,updateTime,isDelete
     </sql>
 </mapper>
