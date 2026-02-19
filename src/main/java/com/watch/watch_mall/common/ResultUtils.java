@@ -17,6 +17,16 @@ public class ResultUtils {
     public static <T> BaseResponse<T> success(T data) {
         return new BaseResponse<>(0, data, "ok");
     }
+    /**
+     * 成功
+     *
+     * @param data
+     * @param <T>
+     * @return
+     */
+    public static <T> BaseResponse<T> success(T data, String msg) {
+        return new BaseResponse<>(0, data, msg);
+    }
 
     /**
      * 失败
