@@ -1,10 +1,16 @@
 package com.watch.watch_mall.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.watch.watch_mall.common.ErrorCode;
+import com.watch.watch_mall.constant.CommonConstant;
+import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.mapper.CategoryMapper;
+import com.watch.watch_mall.model.dto.category.AddCategoryRequest;
 import com.watch.watch_mall.model.entity.Category;
 import com.watch.watch_mall.model.vo.CategoryVO;
 import com.watch.watch_mall.service.CategoryService;
+import com.watch.watch_mall.service.FileService;
+import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
