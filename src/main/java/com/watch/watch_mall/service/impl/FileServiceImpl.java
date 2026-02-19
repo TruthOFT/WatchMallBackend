@@ -20,7 +20,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public String uploadFile(MultipartFile file, String biz) {
-        if (file == null || file.isEmpty()) {
+        if (file == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件不能为空");
         }
 
