@@ -24,4 +24,6 @@ public interface CommonConstant {
      */
     String BIZ_PRODUCT = "product";
 
+    String BIZ_CATEGORY = "category";
+
 }
