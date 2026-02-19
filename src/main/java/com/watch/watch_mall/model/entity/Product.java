@@ -80,21 +80,6 @@ public class Product implements Serializable {
      */
     private Integer version;
 
-    /**
-     * 
-     */
-    private Date createTime;
-
-    /**
-     * 
-     */
-    private Date updateTime;
-
-    /**
-     * 
-     */
-    @TableLogic
-    private Integer isDelete;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
