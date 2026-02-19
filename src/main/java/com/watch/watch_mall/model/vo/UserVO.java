@@ -67,7 +67,7 @@ public class UserVO implements Serializable {
     @TableLogic
     private Integer isDelete;
 
-    Integer userRole;
+    String userRole;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
