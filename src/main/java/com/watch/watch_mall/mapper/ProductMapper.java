@@ -1,43 +1,40 @@
 package com.watch.watch_mall.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.watch.watch_mall.model.dto.product.ProductAdminQueryRequest;
 import com.watch.watch_mall.model.entity.Product;
+import com.watch.watch_mall.model.entity.ProductImages;
+import com.watch.watch_mall.model.entity.ProductSkus;
+import com.watch.watch_mall.model.vo.CategoryVO;
+import com.watch.watch_mall.model.vo.ProductAdminPageVO;
+import com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO;
 import com.watch.watch_mall.model.vo.ProductVO;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-/**
- * @author Ginger
- * @description 针对表【product】的数据库操作Mapper
- * @createDate 2026-01-27 15:49:13
- * @Entity generator.domain.Product
- */
 public interface ProductMapper extends BaseMapper<Product> {
 
-    @Select("select p.*, pi.url from product p " +
-            "left join product_images pi " +
-            "on pi.productId = p.id " +
-            "where p.isRec = 1 " +
-            "order by pi.sortOrder desc ;")
     List<ProductVO> getRecommendProducts();
 
-    @Select("select p.*, pi.url from product p " +
-            "left join product_images pi " +
-            "on pi.productId = p.id " +
-            "where p.isHero = 1 " +
-            "order by pi.sortOrder desc ;")
     ProductVO getHeroProduct();
 
-    @Select("select p.*, pi.url from product p " +
-            "left join product_images pi " +
-            "on pi.productId = p.id " +
-            "where p.isBanner = 1 " +
-            "order by pi.sortOrder desc ;")
     List<ProductVO> getBannerProducts();
 
+    ProductVO getProductBaseById(@Param("productId") Long productId);
+
+    List<ProductImages> getProductImagesByProductId(@Param("productId") Long productId);
+
+    List<CategoryVO> getCategoryListByProductId(@Param("productId") Long productId);
+
+    List<ProductSkus> getSkuListByProductId(@Param("productId") Long productId);
+
+    List<ProductSkuAttributeRowVO> getSkuAttributeRowsByProductId(@Param("productId") Long productId);
+
+    Page<ProductVO> listProductByCategory(Page<ProductVO> page, @Param("categoryId") Long categoryId);
+
+    Page<ProductAdminPageVO> pageAdminProducts(Page<ProductAdminPageVO> page, @Param("query") ProductAdminQueryRequest query);
+
+    List<Long> getCategoryIdListByProductId(@Param("productId") Long productId);
 }
-
-
-
-

@@ -5,27 +5,227 @@
 <mapper namespace="com.watch.watch_mall.mapper.ProductMapper">
 
     <resultMap id="BaseResultMap" type="com.watch.watch_mall.model.entity.Product">
-            <id property="id" column="id" />
-            <result property="name" column="name" />
-            <result property="title" column="title" />
-            <result property="brandId" column="brandId" />
-            <result property="description" column="description" />
-            <result property="feature" column="feature" />
-            <result property="tags" column="tags" />
-            <result property="price" column="price" />
-            <result property="isHero" column="isHero" />
-            <result property="isBanner" column="isBanner" />
-            <result property="isRec" column="isRec" />
-            <result property="status" column="status" />
-            <result property="version" column="version" />
-            <result property="createTime" column="createTime" />
-            <result property="updateTime" column="updateTime" />
-            <result property="isDelete" column="isDelete" />
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="title" column="title"/>
+        <result property="brandId" column="brandId"/>
+        <result property="description" column="description"/>
+        <result property="feature" column="feature"/>
+        <result property="tags" column="tags"/>
+        <result property="price" column="price"/>
+        <result property="isHero" column="isHero"/>
+        <result property="isBanner" column="isBanner"/>
+        <result property="isRec" column="isRec"/>
+        <result property="status" column="status"/>
+        <result property="version" column="version"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+        <result property="isDelete" column="isDelete"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id,name,title,brandId,description,feature,
-        tags,price,isHero,isBanner,isRec,
-        status,version,createTime,updateTime,isDelete
+        id, name, title, brandId, description, feature,
+        tags, price, isHero, isBanner, isRec,
+        status, version, createTime, updateTime, isDelete
     </sql>
+
+    <sql id="Home_Product_Column_List">
+        p.id,
+        p.name,
+        p.title,
+        p.brandId,
+        p.description,
+        p.feature,
+        p.tags,
+        p.price,
+        p.status,
+        p.version,
+        (
+            select pi.url
+            from product_images pi
+            where pi.productId = p.id
+            order by pi.isMain desc, pi.sortOrder asc, pi.createTime asc
+            limit 1
+        ) as url
+    </sql>
+
+    <select id="getRecommendProducts" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product p
+        where p.isRec = 1
+          and p.status = 1
+          and p.isDelete = 0
+        order by p.id desc
+        limit 8
+    </select>
+
+    <select id="getHeroProduct" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product p
+        where p.isHero = 1
+          and p.status = 1
+          and p.isDelete = 0
+        order by p.id desc
+        limit 1
+    </select>
+
+    <select id="getBannerProducts" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product p
+        where p.isBanner = 1
+          and p.status = 1
+          and p.isDelete = 0
+        order by p.id desc
+        limit 5
+    </select>
+
+    <select id="getProductBaseById" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product p
+        where p.id = #{productId}
+          and p.status = 1
+          and p.isDelete = 0
+        limit 1
+    </select>
+
+    <select id="getProductImagesByProductId" resultType="com.watch.watch_mall.model.entity.ProductImages">
+        select
+            id,
+            productId,
+            url,
+            isMain,
+            sortOrder,
+            createTime
+        from product_images
+        where productId = #{productId}
+        order by isMain desc, sortOrder asc, createTime asc
+    </select>
+
+    <select id="getCategoryListByProductId" resultType="com.watch.watch_mall.model.vo.CategoryVO">
+        select
+            c.id,
+            c.name,
+            c.parentId,
+            c.icon,
+            c.description,
+            c.sortOrder,
+            c.createTime,
+            c.updateTime,
+            c.isDelete
+        from product_category pc
+                 inner join category c on c.id = pc.categoryId
+        where pc.productId = #{productId}
+          and c.isDelete = 0
+        order by c.sortOrder asc, c.createTime desc
+    </select>
+
+    <select id="getCategoryIdListByProductId" resultType="java.lang.Long">
+        select categoryId
+        from product_category
+        where productId = #{productId}
+        order by id asc
+    </select>
+
+    <select id="getSkuListByProductId" resultType="com.watch.watch_mall.model.entity.ProductSkus">
+        select
+            id,
+            productId,
+            skuCode,
+            skuName,
+            image,
+            price,
+            marketPrice,
+            stock,
+            lockStock,
+            version,
+            createTime,
+            updateTime
+        from product_skus
+        where productId = #{productId}
+        order by createTime asc, id asc
+    </select>
+
+    <select id="getSkuAttributeRowsByProductId" resultType="com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO">
+        select
+            ps.id as skuId,
+            a.id as attributeId,
+            a.name as attributeName,
+            av.id as attributeValueId,
+            av.value as attributeValue
+        from product_skus ps
+                 inner join sku_attribute_mapping sam on sam.skuId = ps.id
+                 inner join attribute_values av on av.id = sam.attributeValueId
+                 inner join attributes a on a.id = av.attributeId
+        where ps.productId = #{productId}
+        order by ps.id asc, a.id asc, av.id asc
+    </select>
+
+    <select id="listProductByCategory" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product_category pc
+                 inner join product p on p.id = pc.productId
+        where pc.categoryId = #{categoryId}
+          and p.status = 1
+          and p.isDelete = 0
+        order by p.id desc
+    </select>
+
+    <select id="pageAdminProducts" resultType="com.watch.watch_mall.model.vo.ProductAdminPageVO">
+        select
+            p.id,
+            p.name,
+            p.title,
+            p.tags,
+            p.price,
+            p.status,
+            p.isHero,
+            p.isBanner,
+            p.isRec,
+            p.createTime,
+            p.updateTime,
+            (
+                select pi.url
+                from product_images pi
+                where pi.productId = p.id
+                order by pi.isMain desc, pi.sortOrder asc, pi.createTime asc
+                limit 1
+            ) as mainUrl,
+            (
+                select group_concat(distinct c.name separator ', ')
+                from product_category pc2
+                         inner join category c on c.id = pc2.categoryId and c.isDelete = 0
+                where pc2.productId = p.id
+            ) as categoryNames,
+            (
+                select count(*)
+                from product_skus ps
+                where ps.productId = p.id
+            ) as skuCount
+        from product p
+        where p.isDelete = 0
+        <if test="query != null and query.keyword != null and query.keyword != ''">
+            and (
+                p.name like concat('%', #{query.keyword}, '%')
+                or p.title like concat('%', #{query.keyword}, '%')
+                or p.tags like concat('%', #{query.keyword}, '%')
+            )
+        </if>
+        <if test="query != null and query.status != null">
+            and p.status = #{query.status}
+        </if>
+        <if test="query != null and query.categoryId != null">
+            and exists (
+                select 1
+                from product_category pc3
+                where pc3.productId = p.id
+                  and pc3.categoryId = #{query.categoryId}
+            )
+        </if>
+        order by p.updateTime desc, p.id desc
+    </select>
 </mapper>

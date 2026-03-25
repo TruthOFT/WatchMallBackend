@@ -1,20 +1,37 @@
 package com.watch.watch_mall.service;
 
-import com.watch.watch_mall.model.entity.Product;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.watch.watch_mall.model.dto.product.AddProductRequest;
+import com.watch.watch_mall.model.dto.product.ProductAdminQueryRequest;
+import com.watch.watch_mall.model.dto.product.ProductViewTrackRequest;
+import com.watch.watch_mall.model.dto.product.UpdateProductRequest;
+import com.watch.watch_mall.model.entity.Product;
 import com.watch.watch_mall.model.vo.HomeProductVO;
-import org.springframework.web.multipart.MultipartFile;
+import com.watch.watch_mall.model.vo.ProductAdminDetailVO;
+import com.watch.watch_mall.model.vo.ProductAdminPageVO;
+import com.watch.watch_mall.model.vo.ProductDetailVO;
+import com.watch.watch_mall.model.vo.ProductVO;
 
-/**
-* @author Truth
-* @description 针对表【product】的数据库操作Service
-* @createDate 2026-01-11 16:19:33
-*/
+import java.util.List;
+
 public interface ProductService extends IService<Product> {
-    // 新增商品
-    boolean addProduct(Product product, MultipartFile file);
 
-    String uploadFile(MultipartFile file);
+    boolean addProduct(AddProductRequest addProductRequest);
 
-    HomeProductVO getHomeProductVO();
+    boolean updateProduct(UpdateProductRequest updateProductRequest);
+
+    HomeProductVO getHomeProductVO(Long userId);
+
+    ProductDetailVO getProductDetail(Long productId);
+
+    boolean trackProductView(Long userId, ProductViewTrackRequest request);
+
+    List<ProductVO> listRelatedProducts(Long userId, Long productId, Integer size);
+
+    Page<ProductVO> listProductByCategory(Long categoryId, long current, long pageSize);
+
+    Page<ProductAdminPageVO> pageAdminProducts(ProductAdminQueryRequest queryRequest);
+
+    ProductAdminDetailVO getAdminProductDetail(Long productId);
 }
