@@ -1,16 +1,11 @@
 package com.watch.watch_mall.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.watch.watch_mall.common.ErrorCode;
-import com.watch.watch_mall.constant.CommonConstant;
-import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.mapper.CategoryMapper;
-import com.watch.watch_mall.model.dto.category.AddCategoryRequest;
 import com.watch.watch_mall.model.entity.Category;
 import com.watch.watch_mall.model.vo.CategoryVO;
 import com.watch.watch_mall.service.CategoryService;
-import com.watch.watch_mall.service.FileService;
-import jakarta.annotation.Resource;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +21,10 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category>
         implements CategoryService {
     @Override
     public List<CategoryVO> getCategoryVOList() {
-        return this.list().stream().filter(category -> category.getIsShow() == 1).map(category -> {
+        return this.list(new LambdaQueryWrapper<Category>()
+                .eq(Category::getIsShow, 1)
+                .orderByAsc(Category::getSortOrder)
+                .orderByDesc(Category::getCreateTime)).stream().map(category -> {
             CategoryVO categoryVO = new CategoryVO();
             BeanUtils.copyProperties(category, categoryVO);
             return categoryVO;

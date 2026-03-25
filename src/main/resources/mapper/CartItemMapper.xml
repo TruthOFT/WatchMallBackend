@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.watch.watch_mall.mapper.CartItemMapper">
+
+    <select id="selectAnyByCartIdAndSkuId" resultType="com.watch.watch_mall.model.entity.CartItem">
+        select
+            id as id,
+            cartId as cartId,
+            userId as userId,
+            productId as productId,
+            skuId as skuId,
+            quantity as quantity,
+            checked as checked,
+            price as price,
+            createTime as createTime,
+            updateTime as updateTime,
+            isDelete as isDelete
+        from cart_item
+        where cartId = #{cartId}
+          and skuId = #{skuId}
+        limit 1
+    </select>
+
+    <update id="restoreCartItem">
+        update cart_item
+        set productId = #{productId},
+            userId = #{userId},
+            quantity = #{quantity},
+            checked = #{checked},
+            price = #{price},
+            isDelete = 0
+        where id = #{id}
+    </update>
+
+    <select id="getMyCartItems" resultType="com.watch.watch_mall.model.vo.CartItemRowVO">
+        select
+            ci.id as id,
+            ci.cartId as cartId,
+            ci.productId as productId,
+            ci.skuId as skuId,
+            p.name as productName,
+            p.title as productTitle,
+            ps.skuName as skuName,
+            coalesce(nullif(ps.image, ''), (
+                select pi.url
+                from product_images pi
+                where pi.productId = p.id
+                order by pi.isMain desc, pi.sortOrder asc, pi.createTime asc
+                limit 1
+            )) as image,
+            ci.price as price,
+            ci.quantity as quantity,
+            ci.checked as checked,
+            ps.stock as stock
+        from cart_item ci
+                 inner join product p on p.id = ci.productId
+                 inner join product_skus ps on ps.id = ci.skuId
+        where ci.userId = #{userId}
+          and ci.isDelete = 0
+          and p.isDelete = 0
+          and p.status = 1
+        order by ci.updateTime desc, ci.id desc
+    </select>
+
+    <select id="getCartSkuAttributeRows" resultType="com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO">
+        select
+            ci.skuId as skuId,
+            a.id as attributeId,
+            a.name as attributeName,
+            av.id as attributeValueId,
+            av.value as attributeValue
+        from cart_item ci
+                 inner join product p on p.id = ci.productId
+                 inner join product_skus ps on ps.id = ci.skuId
+                 inner join sku_attribute_mapping sam on sam.skuId = ps.id
+                 inner join attribute_values av on av.id = sam.attributeValueId
+                 inner join attributes a on a.id = av.attributeId
+        where ci.userId = #{userId}
+          and ci.isDelete = 0
+          and p.isDelete = 0
+          and p.status = 1
+        order by ci.skuId asc, a.id asc, av.id asc
+    </select>
+</mapper>

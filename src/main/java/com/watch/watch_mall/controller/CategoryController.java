@@ -12,13 +12,18 @@ import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.dto.category.AddCategoryRequest;
 import com.watch.watch_mall.model.dto.category.CategoryQueryRequest;
 import com.watch.watch_mall.model.entity.Category;
+import com.watch.watch_mall.model.vo.ProductVO;
 import com.watch.watch_mall.service.CategoryService;
+import com.watch.watch_mall.service.ProductService;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -29,60 +34,55 @@ public class CategoryController {
     @Resource
     private CategoryService categoryService;
 
-    /**
-     * 增
-     */
-    @PostMapping(path = "/add")
+    @Resource
+    private ProductService productService;
+
+    @PostMapping("/add")
     @AuthCheck(role = "admin")
     public BaseResponse<Boolean> addCategory(@RequestBody AddCategoryRequest addCategoryRequest) {
         ThrowUtils.throwIf(addCategoryRequest == null, ErrorCode.PARAMS_ERROR);
         Category category = new Category();
         BeanUtils.copyProperties(addCategoryRequest, category);
-        return ResultUtils.success(categoryService.save(category), "添加成功");
+        return ResultUtils.success(categoryService.save(category));
     }
 
-    /**
-     * 删
-     */
     @PostMapping("/delete")
+    @AuthCheck(role = "admin")
     public BaseResponse<Boolean> deleteCategory(@RequestBody DeleteRequest deleteRequest) {
         ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0,
                 ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(categoryService.removeById(deleteRequest.getId()));
     }
 
-    /**
-     * 改
-     */
     @PostMapping("/update")
+    @AuthCheck(role = "admin")
     public BaseResponse<Boolean> updateCategory(@RequestBody Category category) {
         ThrowUtils.throwIf(category == null || category.getId() == null || category.getId() <= 0, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(categoryService.updateById(category));
     }
 
-    /**
-     * 查（按 id）
-     */
     @GetMapping("/get")
-    public BaseResponse<Category> getCategoryById(Long id) {
+    public BaseResponse<Category> getCategoryById(@RequestParam("id") Long id) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         Category category = categoryService.getById(id);
         ThrowUtils.throwIf(category == null, ErrorCode.NOT_FOUND_ERROR);
         return ResultUtils.success(category);
     }
 
-    /**
-     * 查（全部）
-     */
     @GetMapping("/list")
     public BaseResponse<List<Category>> listCategory() {
         return ResultUtils.success(categoryService.list());
     }
 
-    /**
-     * 分页查
-     */
+    @GetMapping("/products")
+    public BaseResponse<Page<ProductVO>> listCategoryProducts(@RequestParam("categoryId") Long categoryId,
+                                                              @RequestParam(value = "current", defaultValue = "1") long current,
+                                                              @RequestParam(value = "pageSize", defaultValue = "12") long pageSize) {
+        return ResultUtils.success(productService.listProductByCategory(categoryId, current, pageSize));
+    }
+
     @PostMapping("/list/page")
+    @AuthCheck(role = "admin")
     public BaseResponse<Page<Category>> listCategoryByPage(@RequestBody CategoryQueryRequest categoryQueryRequest) {
         ThrowUtils.throwIf(categoryQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long current = categoryQueryRequest.getCurrent();
@@ -96,7 +96,7 @@ public class CategoryController {
                 Category::getParentId, categoryQueryRequest.getParentId());
         queryWrapper.eq(categoryQueryRequest.getIsShow() != null,
                 Category::getIsShow, categoryQueryRequest.getIsShow());
-        queryWrapper.orderByDesc(Category::getCreateTime);
+        queryWrapper.orderByAsc(Category::getSortOrder).orderByDesc(Category::getCreateTime);
 
         Page<Category> categoryPage = categoryService.page(new Page<>(current, pageSize), queryWrapper);
         return ResultUtils.success(categoryPage);
