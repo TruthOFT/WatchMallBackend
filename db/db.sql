@@ -72,7 +72,7 @@ CREATE TABLE `product`  (
                             `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
                             `feature` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT 'JSON规格',
                             `tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-                            `price` decimal(10, 2) NOT NULL COMMENT '因源数据缺失，默认为0.00',
+                            `price` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '因源数据缺失，默认为0.00',
                             `isHero` tinyint UNSIGNED NULL DEFAULT 0,
                             `isBanner` tinyint UNSIGNED NULL DEFAULT 0,
                             `isRec` tinyint UNSIGNED NULL DEFAULT 0,
