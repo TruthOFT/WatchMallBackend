@@ -25,7 +25,7 @@ class WatchMallBackendApplicationTests {
         addProductRequest.setFeature("TTTFeature");
         addProductRequest.setTags("TTTTags");
         addProductRequest.setTitle("TTTTitle");
-        addProductRequest.setCategoryNames(List.of("Test1", "Test2"));
+//        addProductRequest.setCategoryNames(List.of("Test1", "Test2"));
 
 
         productService.addProduct(addProductRequest);
