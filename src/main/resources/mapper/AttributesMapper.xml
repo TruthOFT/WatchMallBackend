@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.watch.watch_mall.mapper.AttributesMapper">
+
+    <resultMap id="BaseResultMap" type="com.watch.watch_mall.model.entity.Attributes">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="createTime" column="createTime"/>
+    </resultMap>
+
+    <resultMap id="AdminPageResultMap" type="com.watch.watch_mall.model.vo.AttributeAdminPageVO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="categoryName" column="categoryName"/>
+        <result property="createTime" column="createTime"/>
+        <result property="valueList" column="valueList"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
+    <resultMap id="AdminDetailResultMap" type="com.watch.watch_mall.model.vo.AttributeAdminDetailVO">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="categoryId" column="categoryId"/>
+        <result property="createTime" column="createTime"/>
+        <result property="valueList" column="valueList"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, categoryId, createTime
+    </sql>
+
+    <select id="pageAdminAttributes" resultMap="AdminPageResultMap">
+        select
+            a.id,
+            a.name,
+            a.categoryId,
+            c.name as categoryName,
+            a.createTime,
+            if(count(av.id) = 0, json_array(), json_arrayagg(av.value)) as valueList
+        from attributes a
+                 left join category c on c.id = a.categoryId and c.isDelete = 0
+                 left join attribute_values av on av.attributeId = a.id
+        <where>
+            <if test="query != null and query.name != null and query.name != ''">
+                a.name like concat('%', #{query.name}, '%')
+            </if>
+            <if test="query != null and query.categoryId != null">
+                and a.categoryId = #{query.categoryId}
+            </if>
+        </where>
+        group by a.id, a.name, a.categoryId, c.name, a.createTime
+        order by a.createTime desc, a.id desc
+    </select>
+
+    <select id="getAdminAttributeDetail" resultMap="AdminDetailResultMap">
+        select
+            a.id,
+            a.name,
+            a.categoryId,
+            a.createTime,
+            if(count(av.id) = 0, json_array(), json_arrayagg(av.value)) as valueList
+        from attributes a
+                 left join attribute_values av on av.attributeId = a.id
+        where a.id = #{id}
+        group by a.id, a.name, a.categoryId, a.createTime
+        limit 1
+    </select>
+</mapper>
