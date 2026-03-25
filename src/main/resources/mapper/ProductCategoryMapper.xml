@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.watch.watch_mall.mapper.ProductCategoryMapper">
+
+    <resultMap id="BaseResultMap" type="com.watch.watch_mall.model.entity.ProductCategory">
+            <id property="productId" column="productId" />
+            <id property="categoryId" column="categoryId" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        productId,categoryId
+    </sql>
+</mapper>
