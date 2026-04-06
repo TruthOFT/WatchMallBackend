@@ -149,21 +149,6 @@
         order by createTime asc, id asc
     </select>
 
-    <select id="getSkuAttributeRowsByProductId" resultType="com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO">
-        select
-            ps.id as skuId,
-            a.id as attributeId,
-            a.name as attributeName,
-            av.id as attributeValueId,
-            av.value as attributeValue
-        from product_skus ps
-                 inner join sku_attribute_mapping sam on sam.skuId = ps.id
-                 inner join attribute_values av on av.id = sam.attributeValueId
-                 inner join attributes a on a.id = av.attributeId
-        where ps.productId = #{productId}
-        order by ps.id asc, a.id asc, av.id asc
-    </select>
-
     <select id="listProductByCategory" resultType="com.watch.watch_mall.model.vo.ProductVO">
         select
         <include refid="Home_Product_Column_List"/>
@@ -226,6 +211,67 @@
                   and pc3.categoryId = #{query.categoryId}
             )
         </if>
+        order by p.updateTime desc, p.id desc
+    </select>
+
+    <select id="getSearchProductById" resultType="com.watch.watch_mall.model.vo.ProductSearchIndexVO">
+        select
+            p.id,
+            p.name,
+            p.title,
+            p.tags,
+            p.description,
+            p.price,
+            p.status,
+            (
+                select pi.url
+                from product_images pi
+                where pi.productId = p.id
+                order by pi.isMain desc, pi.sortOrder asc, pi.createTime asc
+                limit 1
+            ) as mainImageUrl,
+            (
+                select group_concat(distinct c.name order by c.sortOrder asc separator ', ')
+                from product_category pc
+                    inner join category c on c.id = pc.categoryId
+                where pc.productId = p.id
+                  and c.isDelete = 0
+            ) as categoryNames,
+            p.updateTime
+        from product p
+        where p.id = #{productId}
+          and p.status = 1
+          and p.isDelete = 0
+        limit 1
+    </select>
+
+    <select id="listSearchProducts" resultType="com.watch.watch_mall.model.vo.ProductSearchIndexVO">
+        select
+            p.id,
+            p.name,
+            p.title,
+            p.tags,
+            p.description,
+            p.price,
+            p.status,
+            (
+                select pi.url
+                from product_images pi
+                where pi.productId = p.id
+                order by pi.isMain desc, pi.sortOrder asc, pi.createTime asc
+                limit 1
+            ) as mainImageUrl,
+            (
+                select group_concat(distinct c.name order by c.sortOrder asc separator ', ')
+                from product_category pc
+                    inner join category c on c.id = pc.categoryId
+                where pc.productId = p.id
+                  and c.isDelete = 0
+            ) as categoryNames,
+            p.updateTime
+        from product p
+        where p.status = 1
+          and p.isDelete = 0
         order by p.updateTime desc, p.id desc
     </select>
 </mapper>

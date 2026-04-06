@@ -8,7 +8,7 @@ import com.watch.watch_mall.model.entity.ProductImages;
 import com.watch.watch_mall.model.entity.ProductSkus;
 import com.watch.watch_mall.model.vo.CategoryVO;
 import com.watch.watch_mall.model.vo.ProductAdminPageVO;
-import com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO;
+import com.watch.watch_mall.model.vo.ProductSearchIndexVO;
 import com.watch.watch_mall.model.vo.ProductVO;
 import org.apache.ibatis.annotations.Param;
 
@@ -30,11 +30,13 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     List<ProductSkus> getSkuListByProductId(@Param("productId") Long productId);
 
-    List<ProductSkuAttributeRowVO> getSkuAttributeRowsByProductId(@Param("productId") Long productId);
-
     Page<ProductVO> listProductByCategory(Page<ProductVO> page, @Param("categoryId") Long categoryId);
 
     Page<ProductAdminPageVO> pageAdminProducts(Page<ProductAdminPageVO> page, @Param("query") ProductAdminQueryRequest query);
 
     List<Long> getCategoryIdListByProductId(@Param("productId") Long productId);
+
+    ProductSearchIndexVO getSearchProductById(@Param("productId") Long productId);
+
+    List<ProductSearchIndexVO> listSearchProducts();
 }

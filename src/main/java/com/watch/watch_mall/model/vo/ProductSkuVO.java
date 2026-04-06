@@ -4,7 +4,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 public class ProductSkuVO implements Serializable {
@@ -15,7 +14,6 @@ public class ProductSkuVO implements Serializable {
     private BigDecimal price;
     private BigDecimal marketPrice;
     private Integer stock;
-    private List<SkuAttributeValueVO> attributeValueList;
 
     private static final long serialVersionUID = 1L;
 }

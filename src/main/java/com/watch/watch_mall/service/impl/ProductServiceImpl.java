@@ -6,38 +6,32 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.watch.watch_mall.common.ErrorCode;
-import com.watch.watch_mall.exception.BusinessException;
 import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.mapper.ProductMapper;
 import com.watch.watch_mall.model.dto.product.AddProductRequest;
 import com.watch.watch_mall.model.dto.product.ProductAdminQueryRequest;
 import com.watch.watch_mall.model.dto.product.ProductViewTrackRequest;
 import com.watch.watch_mall.model.dto.product.UpdateProductRequest;
-import com.watch.watch_mall.model.entity.AttributeValues;
 import com.watch.watch_mall.model.entity.Category;
 import com.watch.watch_mall.model.entity.Product;
 import com.watch.watch_mall.model.entity.ProductCategory;
 import com.watch.watch_mall.model.entity.ProductImages;
 import com.watch.watch_mall.model.entity.ProductSkus;
-import com.watch.watch_mall.model.entity.SkuAttributeMapping;
 import com.watch.watch_mall.model.inner_data.FeatureItem;
 import com.watch.watch_mall.model.vo.HomeProductVO;
 import com.watch.watch_mall.model.vo.ProductAdminDetailVO;
 import com.watch.watch_mall.model.vo.ProductAdminPageVO;
 import com.watch.watch_mall.model.vo.ProductDetailVO;
 import com.watch.watch_mall.model.vo.ProductImageVO;
-import com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO;
 import com.watch.watch_mall.model.vo.ProductSkuVO;
 import com.watch.watch_mall.model.vo.ProductVO;
-import com.watch.watch_mall.model.vo.SkuAttributeValueVO;
-import com.watch.watch_mall.service.AttributeValuesService;
 import com.watch.watch_mall.service.CategoryService;
 import com.watch.watch_mall.service.ProductCategoryService;
 import com.watch.watch_mall.service.ProductImagesService;
+import com.watch.watch_mall.service.ProductSearchService;
 import com.watch.watch_mall.service.ProductService;
 import com.watch.watch_mall.service.ProductSkusService;
 import com.watch.watch_mall.service.RecommendationService;
-import com.watch.watch_mall.service.SkuAttributeMappingService;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -47,16 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> implements ProductService {
@@ -77,13 +64,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     private ProductSkusService productSkusService;
 
     @Resource
-    private SkuAttributeMappingService skuAttributeMappingService;
-
-    @Resource
-    private AttributeValuesService attributeValuesService;
-
-    @Resource
     private RecommendationService recommendationService;
+
+    @Resource
+    private ProductSearchService productSearchService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -93,6 +77,17 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         boolean saved = this.save(product);
         ThrowUtils.throwIf(!saved || product.getId() == null, ErrorCode.OPERATION_ERROR, "商品保存失败");
         saveProductRelations(product.getId(), addProductRequest);
+        productSearchService.syncProductById(product.getId());
+        return true;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean deleteProduct(Long productId) {
+        ThrowUtils.throwIf(productId == null || productId <= 0, ErrorCode.PARAMS_ERROR);
+        boolean removed = this.removeById(productId);
+        ThrowUtils.throwIf(!removed, ErrorCode.OPERATION_ERROR, "鍟嗗搧鍒犻櫎澶辫触");
+        productSearchService.deleteProductById(productId);
         return true;
     }
 
@@ -123,6 +118,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
         clearProductRelations(updateProductRequest.getId());
         saveProductRelations(updateProductRequest.getId(), updateProductRequest);
+        productSearchService.syncProductById(updateProductRequest.getId());
         return true;
     }
 
@@ -156,21 +152,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         productDetailVO.setMainUrl(imageList.isEmpty() ? null : imageList.get(0).getUrl());
         productDetailVO.setCategoryList(productMapper.getCategoryListByProductId(productId));
 
-        Map<Long, List<SkuAttributeValueVO>> skuAttributeValueMap = productMapper.getSkuAttributeRowsByProductId(productId)
-                .stream()
-                .collect(Collectors.groupingBy(ProductSkuAttributeRowVO::getSkuId, LinkedHashMap::new, Collectors.mapping(row -> {
-                    SkuAttributeValueVO skuAttributeValueVO = new SkuAttributeValueVO();
-                    skuAttributeValueVO.setAttributeId(row.getAttributeId());
-                    skuAttributeValueVO.setAttributeName(row.getAttributeName());
-                    skuAttributeValueVO.setAttributeValueId(row.getAttributeValueId());
-                    skuAttributeValueVO.setAttributeValue(row.getAttributeValue());
-                    return skuAttributeValueVO;
-                }, Collectors.toList())));
-
         List<ProductSkuVO> skuList = productMapper.getSkuListByProductId(productId).stream().map(productSku -> {
             ProductSkuVO productSkuVO = new ProductSkuVO();
             BeanUtils.copyProperties(productSku, productSkuVO);
-            productSkuVO.setAttributeValueList(skuAttributeValueMap.getOrDefault(productSku.getId(), Collections.emptyList()));
             return productSkuVO;
         }).toList();
         productDetailVO.setSkuList(skuList);
@@ -229,15 +213,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }).toList();
         detailVO.setImages(imageList);
 
-        Map<Long, List<Long>> skuAttributeValueIds = productMapper.getSkuAttributeRowsByProductId(productId).stream()
-                .collect(Collectors.groupingBy(ProductSkuAttributeRowVO::getSkuId,
-                        LinkedHashMap::new,
-                        Collectors.mapping(ProductSkuAttributeRowVO::getAttributeValueId, Collectors.toList())));
-
         List<ProductAdminDetailVO.SkuItemVO> skuList = productMapper.getSkuListByProductId(productId).stream().map(item -> {
             ProductAdminDetailVO.SkuItemVO skuItemVO = new ProductAdminDetailVO.SkuItemVO();
             BeanUtils.copyProperties(item, skuItemVO);
-            skuItemVO.setAttributeValueIds(skuAttributeValueIds.getOrDefault(item.getId(), Collections.emptyList()));
             return skuItemVO;
         }).toList();
         detailVO.setSkus(skuList);
@@ -269,13 +247,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     private void clearProductRelations(Long productId) {
-        List<ProductSkus> oldSkus = productSkusService.list(Wrappers.lambdaQuery(ProductSkus.class)
-                .eq(ProductSkus::getProductId, productId));
-        List<Long> skuIds = oldSkus.stream().map(ProductSkus::getId).filter(Objects::nonNull).toList();
-        if (!skuIds.isEmpty()) {
-            skuAttributeMappingService.remove(Wrappers.lambdaQuery(SkuAttributeMapping.class)
-                    .in(SkuAttributeMapping::getSkuId, skuIds));
-        }
         productSkusService.remove(Wrappers.lambdaQuery(ProductSkus.class).eq(ProductSkus::getProductId, productId));
         productImagesService.remove(Wrappers.lambdaQuery(ProductImages.class).eq(ProductImages::getProductId, productId));
         productCategoryService.remove(Wrappers.lambdaQuery(ProductCategory.class).eq(ProductCategory::getProductId, productId));
@@ -332,25 +303,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             return;
         }
 
-        Set<Long> allValueIds = normalizedSkus.stream()
-                .flatMap(item -> item.getAttributeValueIds() == null ? Stream.empty() : item.getAttributeValueIds().stream())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        Map<Long, Long> valueIdToAttributeId = new HashMap<>();
-        if (!allValueIds.isEmpty()) {
-            List<AttributeValues> attributeValues = attributeValuesService.list(Wrappers.lambdaQuery(AttributeValues.class)
-                    .select(AttributeValues::getId, AttributeValues::getAttributeId)
-                    .in(AttributeValues::getId, allValueIds));
-            ThrowUtils.throwIf(attributeValues.size() != allValueIds.size(), ErrorCode.PARAMS_ERROR, "存在非法属性值");
-            valueIdToAttributeId = attributeValues.stream()
-                    .collect(Collectors.toMap(AttributeValues::getId, AttributeValues::getAttributeId, (left, right) -> left));
-        }
-
-        for (AddProductRequest.SkuItem skuItem : normalizedSkus) {
-            validateSkuAttributeValues(skuItem, valueIdToAttributeId);
-        }
-
         List<ProductSkus> skuEntities = normalizedSkus.stream().map(item -> {
             ProductSkus sku = new ProductSkus();
             sku.setProductId(productId);
@@ -366,24 +318,6 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }).toList();
 
         productSkusService.saveBatch(skuEntities);
-
-        List<SkuAttributeMapping> mappings = new ArrayList<>();
-        for (int i = 0; i < skuEntities.size(); i++) {
-            ProductSkus sku = skuEntities.get(i);
-            List<Long> attributeValueIds = Optional.ofNullable(normalizedSkus.get(i).getAttributeValueIds()).orElse(Collections.emptyList());
-            for (Long attributeValueId : new LinkedHashSet<>(attributeValueIds)) {
-                if (attributeValueId == null) {
-                    continue;
-                }
-                SkuAttributeMapping mapping = new SkuAttributeMapping();
-                mapping.setSkuId(sku.getId());
-                mapping.setAttributeValueId(attributeValueId);
-                mappings.add(mapping);
-            }
-        }
-        if (!mappings.isEmpty()) {
-            skuAttributeMappingService.saveBatch(mappings);
-        }
     }
 
     private List<AddProductRequest.ImageItem> normalizeImages(List<AddProductRequest.ImageItem> images) {
@@ -419,15 +353,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             if (item == null) {
                 continue;
             }
-            List<Long> attributeValueIds = Optional.ofNullable(item.getAttributeValueIds()).orElse(Collections.emptyList())
-                    .stream()
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
             boolean empty = StringUtils.isBlank(item.getSkuCode())
                     && StringUtils.isBlank(item.getSkuName())
                     && StringUtils.isBlank(item.getImage())
-                    && attributeValueIds.isEmpty()
                     && item.getPrice() == null
                     && item.getMarketPrice() == null
                     && item.getStock() == null
@@ -443,25 +371,9 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             normalized.setMarketPrice(defaultPrice(item.getMarketPrice()));
             normalized.setStock(Optional.ofNullable(item.getStock()).orElse(0));
             normalized.setLockStock(Optional.ofNullable(item.getLockStock()).orElse(0));
-            normalized.setAttributeValueIds(attributeValueIds);
             result.add(normalized);
         }
         return result;
-    }
-
-    private void validateSkuAttributeValues(AddProductRequest.SkuItem skuItem, Map<Long, Long> valueIdToAttributeId) {
-        List<Long> attributeValueIds = skuItem.getAttributeValueIds();
-        if (attributeValueIds == null || attributeValueIds.isEmpty()) {
-            return;
-        }
-        Set<Long> attributeIds = new LinkedHashSet<>();
-        for (Long attributeValueId : attributeValueIds) {
-            Long attributeId = valueIdToAttributeId.get(attributeValueId);
-            ThrowUtils.throwIf(attributeId == null, ErrorCode.PARAMS_ERROR, "存在非法属性值");
-            if (!attributeIds.add(attributeId)) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "同一 sku 不能选择同一属性的多个属性值");
-            }
-        }
     }
 
     private ProductVO buildProductVO(ProductVO source) {

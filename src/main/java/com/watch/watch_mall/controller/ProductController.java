@@ -19,6 +19,7 @@ import com.watch.watch_mall.model.vo.ProductAdminDetailVO;
 import com.watch.watch_mall.model.vo.ProductAdminPageVO;
 import com.watch.watch_mall.model.vo.ProductDetailVO;
 import com.watch.watch_mall.model.vo.ProductVO;
+import com.watch.watch_mall.service.ProductSearchService;
 import com.watch.watch_mall.service.ProductService;
 import com.watch.watch_mall.service.UserService;
 import jakarta.annotation.Resource;
@@ -42,6 +43,9 @@ public class ProductController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private ProductSearchService productSearchService;
+
     @PostMapping("/add")
     @AuthCheck(role = "admin")
     public BaseResponse<Boolean> addProduct(@RequestBody AddProductRequest addProductRequest) {
@@ -53,7 +57,7 @@ public class ProductController {
     public BaseResponse<Boolean> deleteProduct(@RequestBody DeleteRequest deleteRequest) {
         ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null || deleteRequest.getId() <= 0,
                 ErrorCode.PARAMS_ERROR);
-        return ResultUtils.success(productService.removeById(deleteRequest.getId()));
+        return ResultUtils.success(productService.deleteProduct(deleteRequest.getId()));
     }
 
     @PostMapping("/update")
@@ -76,6 +80,13 @@ public class ProductController {
     public BaseResponse<ProductDetailVO> getProductDetail(@RequestParam("id") Long id) {
         ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(productService.getProductDetail(id));
+    }
+
+    @GetMapping("/search")
+    public BaseResponse<Page<ProductVO>> searchProducts(@RequestParam("keyword") String keyword,
+                                                        @RequestParam(value = "current", defaultValue = "1") long current,
+                                                        @RequestParam(value = "pageSize", defaultValue = "12") long pageSize) {
+        return ResultUtils.success(productSearchService.searchProducts(keyword, current, pageSize));
     }
 
     @PostMapping("/view/track")
@@ -110,6 +121,12 @@ public class ProductController {
     @AuthCheck(role = "admin")
     public BaseResponse<ProductAdminDetailVO> getAdminProductDetail(@RequestParam("id") Long id) {
         return ResultUtils.success(productService.getAdminProductDetail(id));
+    }
+
+    @PostMapping("/admin/search/rebuild")
+    @AuthCheck(role = "admin")
+    public BaseResponse<Long> rebuildProductSearchIndex() {
+        return ResultUtils.success(productSearchService.rebuildProductIndex());
     }
 
     private Long getLoginUserIdOrNull(HttpServletRequest request) {

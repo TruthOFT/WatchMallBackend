@@ -19,6 +19,8 @@ public interface ProductService extends IService<Product> {
 
     boolean addProduct(AddProductRequest addProductRequest);
 
+    boolean deleteProduct(Long productId);
+
     boolean updateProduct(UpdateProductRequest updateProductRequest);
 
     HomeProductVO getHomeProductVO(Long userId);

@@ -66,7 +66,6 @@ public class ProductAdminDetailVO implements Serializable {
         private Integer version;
         private Date createTime;
         private Date updateTime;
-        private List<Long> attributeValueIds;
     }
 
     private static final long serialVersionUID = 1L;
