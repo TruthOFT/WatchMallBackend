@@ -47,6 +47,5 @@ public class AddProductRequest implements Serializable {
         private BigDecimal marketPrice;
         private Integer stock;
         private Integer lockStock;
-        private List<Long> attributeValueIds; // sku_attribute_mapping
     }
 }
