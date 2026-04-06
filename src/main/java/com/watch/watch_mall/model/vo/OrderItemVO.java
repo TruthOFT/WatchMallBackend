@@ -24,8 +24,6 @@ public class OrderItemVO implements Serializable {
 
     private String skuImage;
 
-    private String skuAttributes;
-
     private BigDecimal price;
 
     private Integer quantity;

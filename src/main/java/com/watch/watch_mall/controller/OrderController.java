@@ -1,12 +1,18 @@
 package com.watch.watch_mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.watch.watch_mall.annotation.AuthCheck;
 import com.watch.watch_mall.common.BaseResponse;
 import com.watch.watch_mall.common.ErrorCode;
 import com.watch.watch_mall.common.ResultUtils;
 import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.dto.order.CheckoutOrderRequest;
 import com.watch.watch_mall.model.dto.order.MockPayRequest;
+import com.watch.watch_mall.model.dto.order.OrderAdminQueryRequest;
 import com.watch.watch_mall.model.entity.User;
+import com.watch.watch_mall.model.vo.OrderAdminDetailVO;
+import com.watch.watch_mall.model.vo.OrderAdminPageVO;
+import com.watch.watch_mall.model.vo.OrderAdminStatsVO;
 import com.watch.watch_mall.model.vo.OrderDetailVO;
 import com.watch.watch_mall.model.vo.OrderVO;
 import com.watch.watch_mall.service.OrderService;
@@ -54,6 +60,25 @@ public class OrderController {
     public BaseResponse<List<OrderVO>> listMyOrders(HttpServletRequest httpServletRequest) {
         User loginUser = userService.getLoginUser(httpServletRequest);
         return ResultUtils.success(orderService.listMyOrders(loginUser.getId()));
+    }
+
+    @PostMapping("/admin/page")
+    @AuthCheck(role = "admin")
+    public BaseResponse<Page<OrderAdminPageVO>> pageAdminOrders(@RequestBody(required = false) OrderAdminQueryRequest queryRequest) {
+        return ResultUtils.success(orderService.pageAdminOrders(queryRequest));
+    }
+
+    @GetMapping("/admin/detail")
+    @AuthCheck(role = "admin")
+    public BaseResponse<OrderAdminDetailVO> getAdminOrderDetail(@RequestParam("id") Long id) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(orderService.getAdminOrderDetail(id));
+    }
+
+    @GetMapping("/admin/stats")
+    @AuthCheck(role = "admin")
+    public BaseResponse<OrderAdminStatsVO> getAdminOrderStats() {
+        return ResultUtils.success(orderService.getAdminOrderStats());
     }
 
     @GetMapping("/detail")

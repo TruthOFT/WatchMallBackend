@@ -1,12 +1,17 @@
 package com.watch.watch_mall.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.watch.watch_mall.common.ErrorCode;
 import com.watch.watch_mall.exception.BusinessException;
 import com.watch.watch_mall.mapper.UserMapper;
 import com.watch.watch_mall.model.entity.User;
+import com.watch.watch_mall.model.dto.user.UserAdminQueryRequest;
 import com.watch.watch_mall.model.vo.LoginUserVO;
+import com.watch.watch_mall.model.vo.UserAdminDetailVO;
+import com.watch.watch_mall.model.vo.UserAdminPageVO;
 import com.watch.watch_mall.model.vo.UserVO;
 import com.watch.watch_mall.service.UserService;
 import jakarta.annotation.Resource;
@@ -188,8 +193,54 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return userVO;
     }
 
-}
+    @Override
+    public Page<UserAdminPageVO> pageAdminUsers(UserAdminQueryRequest queryRequest) {
+        UserAdminQueryRequest validQuery = queryRequest == null ? new UserAdminQueryRequest() : queryRequest;
+        String keyword = StringUtils.trimToNull(validQuery.getKeyword());
+        String userRole = StringUtils.trimToNull(validQuery.getUserRole());
+        Page<User> page = new Page<>(validQuery.getCurrent(), validQuery.getPageSize());
+        Page<User> userPage = userMapper.selectPage(page, Wrappers.lambdaQuery(User.class)
+                .and(keyword != null, wrapper -> wrapper
+                        .like(User::getUserAccount, keyword)
+                        .or()
+                        .like(User::getUsername, keyword)
+                        .or()
+                        .like(User::getEmail, keyword)
+                        .or()
+                        .like(User::getPhone, keyword))
+                .eq(userRole != null, User::getUserRole, userRole)
+                .eq(User::getIsDelete, 0)
+                .orderByDesc(User::getCreateTime)
+                .orderByDesc(User::getId));
+        Page<UserAdminPageVO> resultPage = new Page<>(userPage.getCurrent(), userPage.getSize(), userPage.getTotal());
+        resultPage.setRecords(userPage.getRecords().stream().map(this::toUserAdminPageVO).toList());
+        return resultPage;
+    }
 
+    @Override
+    public UserAdminDetailVO getAdminUserDetail(Long userId) {
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User user = userMapper.selectOne(Wrappers.lambdaQuery(User.class)
+                .eq(User::getId, userId)
+                .eq(User::getIsDelete, 0)
+                .last("limit 1"));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "user not found");
+        }
+        UserAdminDetailVO detailVO = new UserAdminDetailVO();
+        BeanUtils.copyProperties(user, detailVO);
+        return detailVO;
+    }
+
+    private UserAdminPageVO toUserAdminPageVO(User user) {
+        UserAdminPageVO pageVO = new UserAdminPageVO();
+        BeanUtils.copyProperties(user, pageVO);
+        return pageVO;
+    }
+
+}
 
 
 

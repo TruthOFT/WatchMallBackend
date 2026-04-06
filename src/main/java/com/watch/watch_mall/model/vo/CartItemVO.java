@@ -4,7 +4,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 public class CartItemVO implements Serializable {
@@ -30,8 +29,6 @@ public class CartItemVO implements Serializable {
     private Integer checked;
 
     private Integer stock;
-
-    private List<SkuAttributeValueVO> attributeValueList;
 
     private static final long serialVersionUID = 1L;
 }

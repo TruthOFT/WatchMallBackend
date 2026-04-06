@@ -64,23 +64,4 @@
         order by ci.updateTime desc, ci.id desc
     </select>
 
-    <select id="getCartSkuAttributeRows" resultType="com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO">
-        select
-            ci.skuId as skuId,
-            a.id as attributeId,
-            a.name as attributeName,
-            av.id as attributeValueId,
-            av.value as attributeValue
-        from cart_item ci
-                 inner join product p on p.id = ci.productId
-                 inner join product_skus ps on ps.id = ci.skuId
-                 inner join sku_attribute_mapping sam on sam.skuId = ps.id
-                 inner join attribute_values av on av.id = sam.attributeValueId
-                 inner join attributes a on a.id = av.attributeId
-        where ci.userId = #{userId}
-          and ci.isDelete = 0
-          and p.isDelete = 0
-          and p.status = 1
-        order by ci.skuId asc, a.id asc, av.id asc
-    </select>
 </mapper>

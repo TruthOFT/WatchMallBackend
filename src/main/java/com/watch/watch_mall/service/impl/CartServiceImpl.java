@@ -16,8 +16,6 @@ import com.watch.watch_mall.model.entity.ProductSkus;
 import com.watch.watch_mall.model.vo.CartItemRowVO;
 import com.watch.watch_mall.model.vo.CartItemVO;
 import com.watch.watch_mall.model.vo.CartVO;
-import com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO;
-import com.watch.watch_mall.model.vo.SkuAttributeValueVO;
 import com.watch.watch_mall.service.CartService;
 import com.watch.watch_mall.service.ProductService;
 import com.watch.watch_mall.service.ProductSkusService;
@@ -29,11 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements CartService {
@@ -150,15 +145,9 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
             return emptyCart;
         }
 
-        Map<Long, List<SkuAttributeValueVO>> attributeMap = cartItemMapper.getCartSkuAttributeRows(userId).stream()
-                .collect(Collectors.groupingBy(ProductSkuAttributeRowVO::getSkuId,
-                        LinkedHashMap::new,
-                        Collectors.mapping(this::toSkuAttributeValueVO, Collectors.toList())));
-
         List<CartItemVO> itemList = rows.stream().map(row -> {
             CartItemVO itemVO = new CartItemVO();
             BeanUtils.copyProperties(row, itemVO);
-            itemVO.setAttributeValueList(attributeMap.getOrDefault(row.getSkuId(), Collections.emptyList()));
             return itemVO;
         }).toList();
 
@@ -245,15 +234,6 @@ public class CartServiceImpl extends ServiceImpl<CartMapper, Cart> implements Ca
                 .last("limit 1"));
         ThrowUtils.throwIf(cartItem == null, ErrorCode.NOT_FOUND_ERROR, "cart item not found");
         return cartItem;
-    }
-
-    private SkuAttributeValueVO toSkuAttributeValueVO(ProductSkuAttributeRowVO row) {
-        SkuAttributeValueVO item = new SkuAttributeValueVO();
-        item.setAttributeId(row.getAttributeId());
-        item.setAttributeName(row.getAttributeName());
-        item.setAttributeValueId(row.getAttributeValueId());
-        item.setAttributeValue(row.getAttributeValue());
-        return item;
     }
 
     private BigDecimal calculateCheckedAmount(List<CartItemVO> itemList) {

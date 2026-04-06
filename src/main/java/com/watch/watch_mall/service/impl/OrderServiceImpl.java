@@ -1,7 +1,7 @@
 package com.watch.watch_mall.service.impl;
 
-import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.watch.watch_mall.common.ErrorCode;
 import com.watch.watch_mall.constant.OrderConstant;
 import com.watch.watch_mall.exception.ThrowUtils;
@@ -10,21 +10,24 @@ import com.watch.watch_mall.mapper.OrderItemMapper;
 import com.watch.watch_mall.mapper.OrderMapper;
 import com.watch.watch_mall.mapper.UserAddressMapper;
 import com.watch.watch_mall.model.dto.order.CheckoutOrderRequest;
+import com.watch.watch_mall.model.dto.order.OrderAdminQueryRequest;
 import com.watch.watch_mall.model.entity.CartItem;
 import com.watch.watch_mall.model.entity.Order;
 import com.watch.watch_mall.model.entity.OrderItem;
 import com.watch.watch_mall.model.entity.ProductSkus;
 import com.watch.watch_mall.model.entity.UserAddress;
 import com.watch.watch_mall.model.vo.CartItemRowVO;
+import com.watch.watch_mall.model.vo.OrderAdminDetailVO;
+import com.watch.watch_mall.model.vo.OrderAdminPageVO;
+import com.watch.watch_mall.model.vo.OrderAdminStatsVO;
 import com.watch.watch_mall.model.vo.OrderDetailVO;
 import com.watch.watch_mall.model.vo.OrderItemVO;
 import com.watch.watch_mall.model.vo.OrderVO;
-import com.watch.watch_mall.model.vo.ProductSkuAttributeRowVO;
-import com.watch.watch_mall.model.vo.SkuAttributeValueVO;
 import com.watch.watch_mall.mq.OrderEventMessage;
 import com.watch.watch_mall.mq.OrderMqConstant;
 import com.watch.watch_mall.mq.OrderMqProducer;
 import com.watch.watch_mall.service.OrderService;
+import com.watch.watch_mall.service.PayLogService;
 import com.watch.watch_mall.service.ProductSkusService;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
@@ -35,14 +38,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +67,9 @@ public class OrderServiceImpl implements OrderService {
     @Resource
     private OrderMqProducer orderMqProducer;
 
+    @Resource
+    private PayLogService payLogService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public OrderDetailVO checkout(Long userId, CheckoutOrderRequest request) {
@@ -83,10 +87,6 @@ public class OrderServiceImpl implements OrderService {
 
         Map<Long, CartItemRowVO> cartRowMap = cartItemMapper.getMyCartItems(userId).stream()
                 .collect(Collectors.toMap(CartItemRowVO::getId, row -> row, (left, right) -> left, LinkedHashMap::new));
-        Map<Long, List<SkuAttributeValueVO>> skuAttributeMap = cartItemMapper.getCartSkuAttributeRows(userId).stream()
-                .collect(Collectors.groupingBy(ProductSkuAttributeRowVO::getSkuId,
-                        LinkedHashMap::new,
-                        Collectors.mapping(this::toSkuAttributeValueVO, Collectors.toList())));
 
         BigDecimal totalAmount = BigDecimal.ZERO;
         Map<Long, ProductSkus> skuMap = new LinkedHashMap<>();
@@ -122,7 +122,6 @@ public class OrderServiceImpl implements OrderService {
 
         for (CartItem cartItem : checkedCartItems) {
             CartItemRowVO cartRow = cartRowMap.get(cartItem.getId());
-            List<SkuAttributeValueVO> attributeValueList = skuAttributeMap.getOrDefault(cartItem.getSkuId(), Collections.emptyList());
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(order.getId());
             orderItem.setUserId(userId);
@@ -133,7 +132,6 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setProductTitle(cartRow.getProductTitle());
             orderItem.setSkuName(cartRow.getSkuName());
             orderItem.setSkuImage(cartRow.getImage());
-            orderItem.setSkuAttributes(attributeValueList.isEmpty() ? null : JSON.toJSONString(attributeValueList));
             orderItem.setPrice(cartItem.getPrice());
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setTotalAmount(cartItem.getPrice().multiply(BigDecimal.valueOf(defaultInt(cartItem.getQuantity()))));
@@ -191,6 +189,76 @@ public class OrderServiceImpl implements OrderService {
         detailVO.setExpireTime(buildExpireTime(order.getCreateTime()));
         detailVO.setItemList(listOrderItems(Collections.singletonList(orderId)).getOrDefault(orderId, Collections.emptyList()));
         return detailVO;
+    }
+
+    @Override
+    public Page<OrderAdminPageVO> pageAdminOrders(OrderAdminQueryRequest queryRequest) {
+        OrderAdminQueryRequest validQuery = queryRequest == null ? new OrderAdminQueryRequest() : queryRequest;
+        String keyword = StringUtils.trimToNull(validQuery.getKeyword());
+        Page<Order> page = new Page<>(validQuery.getCurrent(), validQuery.getPageSize());
+        Page<Order> orderPage = orderMapper.selectPage(page, Wrappers.lambdaQuery(Order.class)
+                .and(keyword != null, wrapper -> wrapper
+                        .like(Order::getOrderNo, keyword)
+                        .or()
+                        .like(Order::getReceiverName, keyword)
+                        .or()
+                        .like(Order::getReceiverPhone, keyword))
+                .eq(validQuery.getOrderStatus() != null, Order::getOrderStatus, validQuery.getOrderStatus())
+                .eq(Order::getIsDelete, 0)
+                .orderByDesc(Order::getCreateTime)
+                .orderByDesc(Order::getId));
+        List<Order> orderList = orderPage.getRecords();
+        if (orderList == null || orderList.isEmpty()) {
+            return new Page<>(orderPage.getCurrent(), orderPage.getSize(), orderPage.getTotal());
+        }
+        Map<Long, List<OrderItemVO>> itemMap = listOrderItems(orderList.stream().map(Order::getId).toList());
+        List<OrderAdminPageVO> records = orderList.stream()
+                .map(order -> toOrderAdminPageVO(order, itemMap.get(order.getId())))
+                .toList();
+        Page<OrderAdminPageVO> resultPage = new Page<>(orderPage.getCurrent(), orderPage.getSize(), orderPage.getTotal());
+        resultPage.setRecords(records);
+        return resultPage;
+    }
+
+    @Override
+    public OrderAdminDetailVO getAdminOrderDetail(Long orderId) {
+        ThrowUtils.throwIf(orderId == null || orderId <= 0, ErrorCode.PARAMS_ERROR);
+        Order order = orderMapper.selectOne(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getId, orderId)
+                .eq(Order::getIsDelete, 0)
+                .last("limit 1"));
+        ThrowUtils.throwIf(order == null, ErrorCode.NOT_FOUND_ERROR, "order not found");
+        List<OrderItemVO> itemList = listOrderItems(Collections.singletonList(orderId))
+                .getOrDefault(orderId, Collections.emptyList());
+        OrderAdminDetailVO detailVO = toOrderAdminDetailVO(order, itemList);
+        detailVO.setPayLogList(payLogService.listAdminPayLogsByOrderId(orderId));
+        return detailVO;
+    }
+
+    @Override
+    public OrderAdminStatsVO getAdminOrderStats() {
+        OrderAdminStatsVO statsVO = new OrderAdminStatsVO();
+        Date now = new Date();
+        Date todayStart = buildTodayStart();
+        statsVO.setTotalCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)));
+        statsVO.setPendingCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)
+                .eq(Order::getOrderStatus, OrderConstant.ORDER_STATUS_PENDING_PAY)));
+        statsVO.setPaidCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)
+                .eq(Order::getOrderStatus, OrderConstant.ORDER_STATUS_PAID)));
+        statsVO.setClosedCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)
+                .eq(Order::getOrderStatus, OrderConstant.ORDER_STATUS_CLOSED)));
+        statsVO.setOverduePendingCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)
+                .eq(Order::getOrderStatus, OrderConstant.ORDER_STATUS_PENDING_PAY)
+                .lt(Order::getCreateTime, new Date(now.getTime() - OrderMqConstant.ORDER_CLOSE_TTL_MILLIS))));
+        statsVO.setTodayCount(orderMapper.selectCount(Wrappers.lambdaQuery(Order.class)
+                .eq(Order::getIsDelete, 0)
+                .ge(Order::getCreateTime, todayStart)));
+        return statsVO;
     }
 
     @Override
@@ -256,13 +324,43 @@ public class OrderServiceImpl implements OrderService {
         return orderItemVO;
     }
 
-    private SkuAttributeValueVO toSkuAttributeValueVO(ProductSkuAttributeRowVO row) {
-        SkuAttributeValueVO item = new SkuAttributeValueVO();
-        item.setAttributeId(row.getAttributeId());
-        item.setAttributeName(row.getAttributeName());
-        item.setAttributeValueId(row.getAttributeValueId());
-        item.setAttributeValue(row.getAttributeValue());
-        return item;
+    private OrderAdminPageVO toOrderAdminPageVO(Order order, List<OrderItemVO> itemList) {
+        OrderAdminPageVO orderAdminPageVO = new OrderAdminPageVO();
+        BeanUtils.copyProperties(order, orderAdminPageVO);
+        orderAdminPageVO.setItemCount(sumItemQuantity(itemList));
+        orderAdminPageVO.setProductSummary(buildProductSummary(itemList));
+        return orderAdminPageVO;
+    }
+
+    private OrderAdminDetailVO toOrderAdminDetailVO(Order order, List<OrderItemVO> itemList) {
+        OrderAdminDetailVO detailVO = new OrderAdminDetailVO();
+        BeanUtils.copyProperties(order, detailVO);
+        detailVO.setExpireTime(buildExpireTime(order.getCreateTime()));
+        detailVO.setItemList(itemList);
+        return detailVO;
+    }
+
+    private Integer sumItemQuantity(List<OrderItemVO> itemList) {
+        if (itemList == null || itemList.isEmpty()) {
+            return 0;
+        }
+        return itemList.stream()
+                .map(OrderItemVO::getQuantity)
+                .filter(Objects::nonNull)
+                .reduce(0, Integer::sum);
+    }
+
+    private String buildProductSummary(List<OrderItemVO> itemList) {
+        if (itemList == null || itemList.isEmpty()) {
+            return "-";
+        }
+        OrderItemVO firstItem = itemList.get(0);
+        String productName = StringUtils.defaultIfBlank(firstItem.getProductName(), "Unnamed product");
+        int itemCount = sumItemQuantity(itemList);
+        if (itemCount <= 1) {
+            return productName;
+        }
+        return productName + " x " + itemCount;
     }
 
     private UserAddress getDefaultAddress(Long userId) {
@@ -290,5 +388,10 @@ public class OrderServiceImpl implements OrderService {
             return null;
         }
         return new Date(createTime.getTime() + OrderMqConstant.ORDER_CLOSE_TTL_MILLIS);
+    }
+
+    private Date buildTodayStart() {
+        Date now = new Date();
+        return new Date(now.getYear(), now.getMonth(), now.getDate(), 0, 0, 0);
     }
 }
