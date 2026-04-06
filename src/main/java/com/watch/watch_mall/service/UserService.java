@@ -1,8 +1,12 @@
 package com.watch.watch_mall.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.watch.watch_mall.model.dto.user.UserAdminQueryRequest;
 import com.watch.watch_mall.model.entity.User;
 import com.watch.watch_mall.model.vo.LoginUserVO;
+import com.watch.watch_mall.model.vo.UserAdminDetailVO;
+import com.watch.watch_mall.model.vo.UserAdminPageVO;
 import com.watch.watch_mall.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -29,4 +33,8 @@ public interface UserService extends IService<User> {
     LoginUserVO getLoginUserVO(User user);
 
     UserVO getUserVO(User user);
+
+    Page<UserAdminPageVO> pageAdminUsers(UserAdminQueryRequest queryRequest);
+
+    UserAdminDetailVO getAdminUserDetail(Long userId);
 }

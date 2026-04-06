@@ -1,5 +1,7 @@
 package com.watch.watch_mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.watch.watch_mall.annotation.AuthCheck;
 import com.watch.watch_mall.common.BaseResponse;
 import com.watch.watch_mall.common.DeleteRequest;
 import com.watch.watch_mall.common.ErrorCode;
@@ -9,6 +11,8 @@ import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.dto.user.*;
 import com.watch.watch_mall.model.entity.User;
 import com.watch.watch_mall.model.vo.LoginUserVO;
+import com.watch.watch_mall.model.vo.UserAdminDetailVO;
+import com.watch.watch_mall.model.vo.UserAdminPageVO;
 import com.watch.watch_mall.model.vo.UserVO;
 import com.watch.watch_mall.service.FileService;
 import com.watch.watch_mall.service.UserService;
@@ -121,6 +125,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/add")
+    @AuthCheck(role = "admin")
     public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest, HttpServletRequest request) {
         if (userAddRequest == null || request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -144,6 +149,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/delete")
+    @AuthCheck(role = "admin")
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -160,6 +166,7 @@ public class UserController {
      * @return
      */
     @PostMapping("/update")
+    @AuthCheck(role = "admin")
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
                                             HttpServletRequest request) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
@@ -180,6 +187,7 @@ public class UserController {
      * @return
      */
     @GetMapping("/get")
+    @AuthCheck(role = "admin")
     public BaseResponse<User> getUserById(long id, HttpServletRequest request) {
         if (id <= 0 || request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -197,6 +205,7 @@ public class UserController {
      * @return
      */
     @GetMapping("/get/vo")
+    @AuthCheck(role = "admin")
     public BaseResponse<UserVO> getUserVOById(long id, HttpServletRequest request) {
         BaseResponse<User> response = getUserById(id, request);
         User user = response.getData();
@@ -223,6 +232,19 @@ public class UserController {
         boolean result = userService.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
+    }
+
+    @PostMapping("/admin/page")
+    @AuthCheck(role = "admin")
+    public BaseResponse<Page<UserAdminPageVO>> pageAdminUsers(@RequestBody(required = false) UserAdminQueryRequest queryRequest) {
+        return ResultUtils.success(userService.pageAdminUsers(queryRequest));
+    }
+
+    @GetMapping("/admin/detail")
+    @AuthCheck(role = "admin")
+    public BaseResponse<UserAdminDetailVO> getAdminUserDetail(@RequestParam("id") Long id) {
+        ThrowUtils.throwIf(id == null || id <= 0, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(userService.getAdminUserDetail(id));
     }
 
     @PostMapping("/avatar")

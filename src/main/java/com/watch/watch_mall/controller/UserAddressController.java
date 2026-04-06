@@ -1,5 +1,6 @@
 package com.watch.watch_mall.controller;
 
+import com.watch.watch_mall.annotation.AuthCheck;
 import com.watch.watch_mall.common.BaseResponse;
 import com.watch.watch_mall.common.DeleteRequest;
 import com.watch.watch_mall.common.ErrorCode;
@@ -8,6 +9,7 @@ import com.watch.watch_mall.exception.ThrowUtils;
 import com.watch.watch_mall.model.dto.address.SetDefaultAddressRequest;
 import com.watch.watch_mall.model.dto.address.UserAddressAddRequest;
 import com.watch.watch_mall.model.dto.address.UserAddressUpdateRequest;
+import com.watch.watch_mall.model.vo.UserAddressAdminVO;
 import com.watch.watch_mall.model.entity.User;
 import com.watch.watch_mall.model.vo.UserAddressVO;
 import com.watch.watch_mall.service.UserAddressService;
@@ -73,5 +75,28 @@ public class UserAddressController {
                 ErrorCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(request);
         return ResultUtils.success(userAddressService.setDefaultAddress(loginUser.getId(), setDefaultRequest.getId()));
+    }
+
+    @GetMapping("/admin/list")
+    @AuthCheck(role = "admin")
+    public BaseResponse<List<UserAddressAdminVO>> listAdminAddress(@RequestParam("userId") Long userId) {
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR);
+        List<UserAddressAdminVO> result = userAddressService.listMyAddress(userId).stream().map(addressVO -> {
+            UserAddressAdminVO adminVO = new UserAddressAdminVO();
+            adminVO.setId(addressVO.getId());
+            adminVO.setUserId(userId);
+            adminVO.setReceiverName(addressVO.getReceiverName());
+            adminVO.setReceiverPhone(addressVO.getReceiverPhone());
+            adminVO.setProvince(addressVO.getProvince());
+            adminVO.setCity(addressVO.getCity());
+            adminVO.setDistrict(addressVO.getDistrict());
+            adminVO.setDetailAddress(addressVO.getDetailAddress());
+            adminVO.setPostalCode(addressVO.getPostalCode());
+            adminVO.setIsDefault(addressVO.getIsDefault());
+            adminVO.setCreateTime(addressVO.getCreateTime());
+            adminVO.setUpdateTime(addressVO.getUpdateTime());
+            return adminVO;
+        }).toList();
+        return ResultUtils.success(result);
     }
 }
