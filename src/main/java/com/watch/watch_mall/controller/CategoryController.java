@@ -69,6 +69,18 @@ public class CategoryController {
         return ResultUtils.success(category);
     }
 
+    @GetMapping("/get/id")
+    public BaseResponse<Long> getCategoryIdByCategoryName(@RequestParam("categoryName") String categoryName) {
+        ThrowUtils.throwIf(StringUtils.isBlank(categoryName), ErrorCode.PARAMS_ERROR);
+        LambdaQueryWrapper<Category> queryWrapper = Wrappers.lambdaQuery(Category.class)
+                .select(Category::getId)
+                .eq(Category::getName, categoryName)
+                .last("limit 1");
+        Category category = categoryService.getOne(queryWrapper, false);
+        ThrowUtils.throwIf(category == null || category.getId() == null, ErrorCode.NOT_FOUND_ERROR);
+        return ResultUtils.success(category.getId());
+    }
+
     @GetMapping("/list")
     public BaseResponse<List<Category>> listCategory() {
         return ResultUtils.success(categoryService.list());
