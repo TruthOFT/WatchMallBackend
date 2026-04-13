@@ -234,6 +234,23 @@ public class UserController {
         return ResultUtils.success(true);
     }
 
+    @PostMapping("/password/update")
+    public BaseResponse<Boolean> updateMyPassword(@RequestBody UserUpdatePasswordRequest userUpdatePasswordRequest,
+                                                  HttpServletRequest request) {
+        if (userUpdatePasswordRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        boolean result = userService.updatePassword(
+                loginUser,
+                userUpdatePasswordRequest.getOldPassword(),
+                userUpdatePasswordRequest.getNewPassword(),
+                userUpdatePasswordRequest.getCheckPassword(),
+                request
+        );
+        return ResultUtils.success(result);
+    }
+
     @PostMapping("/admin/page")
     @AuthCheck(role = "admin")
     public BaseResponse<Page<UserAdminPageVO>> pageAdminUsers(@RequestBody(required = false) UserAdminQueryRequest queryRequest) {

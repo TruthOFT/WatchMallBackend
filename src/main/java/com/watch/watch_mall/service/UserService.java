@@ -37,4 +37,6 @@ public interface UserService extends IService<User> {
     Page<UserAdminPageVO> pageAdminUsers(UserAdminQueryRequest queryRequest);
 
     UserAdminDetailVO getAdminUserDetail(Long userId);
+
+    boolean updatePassword(User loginUser, String oldPassword, String newPassword, String checkPassword, HttpServletRequest request);
 }

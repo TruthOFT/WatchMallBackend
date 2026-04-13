@@ -240,7 +240,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return pageVO;
     }
 
-}
+    @Override
+    public boolean updatePassword(User loginUser, String oldPassword, String newPassword, String checkPassword, HttpServletRequest request) {
+        if (loginUser == null || loginUser.getId() == null || request == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        if (StringUtils.isAnyBlank(oldPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码参数不能为空");
+        }
+        if (newPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能少于 8 位");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码不能与旧密码相同");
+        }
+        String oldEncryptPassword = DigestUtils.md5DigestAsHex((SALT + oldPassword).getBytes());
+        if (!oldEncryptPassword.equals(loginUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码错误");
+        }
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserPassword(DigestUtils.md5DigestAsHex((SALT + newPassword).getBytes()));
+        boolean result = this.updateById(updateUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "密码修改失败");
+        }
+        request.getSession().removeAttribute(USER_LOGIN_STATE);
+        return true;
+    }
 
+}
 
 
