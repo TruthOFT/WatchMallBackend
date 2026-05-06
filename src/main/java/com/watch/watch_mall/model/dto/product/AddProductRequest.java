@@ -40,6 +40,7 @@ public class AddProductRequest implements Serializable {
 
     @Data
     public static class SkuItem {
+        private Long id;
         private String skuCode;
         private String skuName;
         private String image;

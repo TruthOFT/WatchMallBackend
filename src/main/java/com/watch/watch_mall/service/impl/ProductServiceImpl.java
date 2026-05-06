@@ -7,12 +7,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.watch.watch_mall.common.ErrorCode;
 import com.watch.watch_mall.exception.ThrowUtils;
+import com.watch.watch_mall.mapper.CartItemMapper;
+import com.watch.watch_mall.mapper.OrderItemMapper;
 import com.watch.watch_mall.mapper.ProductMapper;
 import com.watch.watch_mall.model.dto.product.AddProductRequest;
 import com.watch.watch_mall.model.dto.product.ProductAdminQueryRequest;
 import com.watch.watch_mall.model.dto.product.ProductViewTrackRequest;
 import com.watch.watch_mall.model.dto.product.UpdateProductRequest;
+import com.watch.watch_mall.model.entity.CartItem;
 import com.watch.watch_mall.model.entity.Category;
+import com.watch.watch_mall.model.entity.OrderItem;
 import com.watch.watch_mall.model.entity.Product;
 import com.watch.watch_mall.model.entity.ProductCategory;
 import com.watch.watch_mall.model.entity.ProductImages;
@@ -41,9 +45,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> implements ProductService {
@@ -62,6 +71,12 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Resource
     private ProductSkusService productSkusService;
+
+    @Resource
+    private CartItemMapper cartItemMapper;
+
+    @Resource
+    private OrderItemMapper orderItemMapper;
 
     @Resource
     private RecommendationService recommendationService;
@@ -116,8 +131,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         boolean updated = this.update(updateWrapper);
         ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "商品更新失败");
 
-        clearProductRelations(updateProductRequest.getId());
-        saveProductRelations(updateProductRequest.getId(), updateProductRequest);
+        updateProductRelations(updateProductRequest.getId(), updateProductRequest);
         productSearchService.syncProductById(updateProductRequest.getId());
         return true;
     }
@@ -252,6 +266,15 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         productCategoryService.remove(Wrappers.lambdaQuery(ProductCategory.class).eq(ProductCategory::getProductId, productId));
     }
 
+    private void updateProductRelations(Long productId, AddProductRequest request) {
+        validateCategoryIds(request.getCategoryIds());
+        productImagesService.remove(Wrappers.lambdaQuery(ProductImages.class).eq(ProductImages::getProductId, productId));
+        productCategoryService.remove(Wrappers.lambdaQuery(ProductCategory.class).eq(ProductCategory::getProductId, productId));
+        saveProductCategories(productId, request.getCategoryIds());
+        saveProductImages(productId, request.getImages());
+        syncProductSkus(productId, request.getSkus());
+    }
+
     private void validateCategoryIds(List<Long> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return;
@@ -320,6 +343,68 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         productSkusService.saveBatch(skuEntities);
     }
 
+    private void syncProductSkus(Long productId, List<AddProductRequest.SkuItem> skuItems) {
+        List<AddProductRequest.SkuItem> normalizedSkus = normalizeSkus(skuItems);
+        List<ProductSkus> existingSkus = productSkusService.list(Wrappers.lambdaQuery(ProductSkus.class)
+                .eq(ProductSkus::getProductId, productId));
+        Map<Long, ProductSkus> existingSkuMap = existingSkus.stream()
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(ProductSkus::getId, Function.identity()));
+        Set<Long> incomingIds = new HashSet<>();
+
+        for (AddProductRequest.SkuItem item : normalizedSkus) {
+            ProductSkus sku = buildSku(productId, item);
+            Long skuId = item.getId();
+            if (skuId != null) {
+                ThrowUtils.throwIf(!existingSkuMap.containsKey(skuId), ErrorCode.PARAMS_ERROR, "SKU 不属于当前商品");
+                sku.setId(skuId);
+                sku.setVersion(Optional.ofNullable(existingSkuMap.get(skuId).getVersion()).orElse(1) + 1);
+                boolean updated = productSkusService.updateById(sku);
+                ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "SKU 更新失败");
+                incomingIds.add(skuId);
+            } else {
+                sku.setVersion(1);
+                boolean saved = productSkusService.save(sku);
+                ThrowUtils.throwIf(!saved, ErrorCode.OPERATION_ERROR, "SKU 保存失败");
+                incomingIds.add(sku.getId());
+            }
+        }
+
+        List<Long> removedSkuIds = existingSkus.stream()
+                .map(ProductSkus::getId)
+                .filter(Objects::nonNull)
+                .filter(id -> !incomingIds.contains(id))
+                .toList();
+        removeUnusedSkus(removedSkuIds);
+    }
+
+    private ProductSkus buildSku(Long productId, AddProductRequest.SkuItem item) {
+        ProductSkus sku = new ProductSkus();
+        sku.setProductId(productId);
+        sku.setSkuCode(StringUtils.trimToNull(item.getSkuCode()));
+        sku.setSkuName(StringUtils.trimToNull(item.getSkuName()));
+        sku.setImage(StringUtils.trimToNull(item.getImage()));
+        sku.setPrice(defaultPrice(item.getPrice()));
+        sku.setMarketPrice(defaultPrice(item.getMarketPrice()));
+        sku.setStock(Optional.ofNullable(item.getStock()).orElse(0));
+        sku.setLockStock(Optional.ofNullable(item.getLockStock()).orElse(0));
+        return sku;
+    }
+
+    private void removeUnusedSkus(List<Long> skuIds) {
+        if (skuIds == null || skuIds.isEmpty()) {
+            return;
+        }
+        cartItemMapper.delete(Wrappers.lambdaQuery(CartItem.class).in(CartItem::getSkuId, skuIds));
+        List<Long> deletableSkuIds = skuIds.stream()
+                .filter(skuId -> orderItemMapper.selectCount(Wrappers.lambdaQuery(OrderItem.class)
+                        .eq(OrderItem::getSkuId, skuId)) == 0)
+                .toList();
+        if (!deletableSkuIds.isEmpty()) {
+            productSkusService.removeByIds(deletableSkuIds);
+        }
+    }
+
     private List<AddProductRequest.ImageItem> normalizeImages(List<AddProductRequest.ImageItem> images) {
         if (images == null || images.isEmpty()) {
             return Collections.emptyList();
@@ -364,6 +449,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 continue;
             }
             AddProductRequest.SkuItem normalized = new AddProductRequest.SkuItem();
+            normalized.setId(item.getId());
             normalized.setSkuCode(StringUtils.trimToNull(item.getSkuCode()));
             normalized.setSkuName(StringUtils.trimToNull(item.getSkuName()));
             normalized.setImage(StringUtils.trimToNull(item.getImage()));
