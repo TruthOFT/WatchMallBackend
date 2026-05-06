@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.MediaType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
@@ -264,19 +265,15 @@ public class UserController {
         return ResultUtils.success(userService.getAdminUserDetail(id));
     }
 
-    @PostMapping("/avatar")
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile file, HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         if (loginUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         String path = fileService.uploadFile(file, "avatar");
-        User loginUser1 = userService.getLoginUser(request);
-        if (loginUser1 == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        loginUser1.setAvatarUrl(path);
-        userService.updateById(loginUser1);
+        loginUser.setAvatarUrl(path);
+        userService.updateById(loginUser);
         return ResultUtils.success(path);
     }
 }

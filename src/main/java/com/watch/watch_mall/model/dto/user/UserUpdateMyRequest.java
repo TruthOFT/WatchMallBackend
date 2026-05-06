@@ -3,32 +3,32 @@ package com.watch.watch_mall.model.dto.user;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 
 /**
- * 用户更新个人信息请求
- *
-
+ * Request for updating current user's profile.
  */
 @Data
 public class UserUpdateMyRequest implements Serializable {
 
     /**
-     * 用户昵称
+     * Display name.
      */
-    private String userName;
+    private String username;
 
     /**
-     * 用户头像
+     * Email address.
      */
-    private String userAvatar;
+    private String email;
 
     /**
-     * 简介
+     * Phone number.
      */
-    private String userProfile;
+    private String phone;
 
-    private BigDecimal balance;
+    /**
+     * Gender: 0 female, 1 male.
+     */
+    private Integer gender;
 
     private static final long serialVersionUID = 1L;
 }
