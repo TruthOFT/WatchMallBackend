@@ -235,6 +235,16 @@ public class UserController {
         return ResultUtils.success(true);
     }
 
+    @PostMapping("/recharge/my")
+    public BaseResponse<LoginUserVO> rechargeMyBalance(@RequestBody UserRechargeRequest userRechargeRequest,
+                                                       HttpServletRequest request) {
+        if (userRechargeRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.rechargeMyBalance(loginUser.getId(), userRechargeRequest.getAmount()));
+    }
+
     @PostMapping("/password/update")
     public BaseResponse<Boolean> updateMyPassword(@RequestBody UserUpdatePasswordRequest userUpdatePasswordRequest,
                                                   HttpServletRequest request) {

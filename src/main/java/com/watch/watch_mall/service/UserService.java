@@ -11,6 +11,8 @@ import com.watch.watch_mall.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import java.math.BigDecimal;
+
 /**
 * @author Lu
 * @description 针对表【user】的数据库操作Service
@@ -39,4 +41,6 @@ public interface UserService extends IService<User> {
     UserAdminDetailVO getAdminUserDetail(Long userId);
 
     boolean updatePassword(User loginUser, String oldPassword, String newPassword, String checkPassword, HttpServletRequest request);
+
+    LoginUserVO rechargeMyBalance(Long userId, BigDecimal amount);
 }

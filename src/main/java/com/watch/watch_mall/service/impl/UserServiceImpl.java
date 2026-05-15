@@ -22,7 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import static com.watch.watch_mall.constant.UserConstant.*;
 
@@ -272,6 +276,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return true;
     }
 
-}
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public LoginUserVO rechargeMyBalance(Long userId, BigDecimal amount) {
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        if (amount == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "充值金额不能为空");
+        }
+        BigDecimal validAmount = amount.stripTrailingZeros();
+        if (validAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "充值金额必须大于 0");
+        }
+        if (validAmount.scale() > 2) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "充值金额最多保留 2 位小数");
+        }
+        if (validAmount.compareTo(new BigDecimal("100000")) > 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "单次充值金额不能超过 100000 元");
+        }
 
+        String amountSql = validAmount.setScale(2, RoundingMode.UNNECESSARY).toPlainString();
+        boolean result = this.lambdaUpdate()
+                .eq(User::getId, userId)
+                .eq(User::getIsDelete, 0)
+                .setSql("balance = COALESCE(balance, 0) + " + amountSql)
+                .setSql("updateTime = NOW()")
+                .update();
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "充值失败");
+        }
+        User updatedUser = this.getById(userId);
+        return getLoginUserVO(updatedUser);
+    }
+
+}
 
