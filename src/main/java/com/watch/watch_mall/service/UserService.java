@@ -42,5 +42,7 @@ public interface UserService extends IService<User> {
 
     boolean updatePassword(User loginUser, String oldPassword, String newPassword, String checkPassword, HttpServletRequest request);
 
+    boolean resetForgotPassword(String userAccount, String oldPassword, String newPassword, String checkPassword);
+
     LoginUserVO rechargeMyBalance(Long userId, BigDecimal amount);
 }

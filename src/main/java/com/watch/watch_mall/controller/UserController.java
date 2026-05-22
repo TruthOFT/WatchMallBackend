@@ -262,6 +262,20 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
+    @PostMapping("/password/forgot/reset")
+    public BaseResponse<Boolean> resetForgotPassword(@RequestBody UserForgotPasswordRequest userForgotPasswordRequest) {
+        if (userForgotPasswordRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean result = userService.resetForgotPassword(
+                userForgotPasswordRequest.getUserAccount(),
+                userForgotPasswordRequest.getOldPassword(),
+                userForgotPasswordRequest.getNewPassword(),
+                userForgotPasswordRequest.getCheckPassword()
+        );
+        return ResultUtils.success(result);
+    }
+
     @PostMapping("/admin/page")
     @AuthCheck(role = "admin")
     public BaseResponse<Page<UserAdminPageVO>> pageAdminUsers(@RequestBody(required = false) UserAdminQueryRequest queryRequest) {

@@ -277,6 +277,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    public boolean resetForgotPassword(String userAccount, String oldPassword, String newPassword, String checkPassword) {
+        userAccount = StringUtils.trimToNull(userAccount);
+        if (StringUtils.isAnyBlank(userAccount, oldPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请完整填写账号、旧密码和新密码");
+        }
+        if (userAccount.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号错误");
+        }
+        if (oldPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码错误");
+        }
+        if (newPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能少于 8 位");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码不能与旧密码相同");
+        }
+        String oldEncryptPassword = DigestUtils.md5DigestAsHex((SALT + oldPassword).getBytes());
+        String finalUserAccount = userAccount;
+        User user = userMapper.selectOne(Wrappers.lambdaQuery(User.class)
+                .eq(User::getUserAccount, finalUserAccount)
+                .eq(User::getUserPassword, oldEncryptPassword)
+                .eq(User::getIsDelete, 0)
+                .last("limit 1"));
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或旧密码错误");
+        }
+        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + newPassword).getBytes());
+        User updateUser = new User();
+        updateUser.setId(user.getId());
+        updateUser.setUserPassword(encryptPassword);
+        boolean result = this.updateById(updateUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "密码重置失败");
+        }
+        return true;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public LoginUserVO rechargeMyBalance(Long userId, BigDecimal amount) {
         if (userId == null || userId <= 0) {
@@ -311,4 +353,3 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
 }
-
