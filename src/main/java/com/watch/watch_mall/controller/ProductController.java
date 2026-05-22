@@ -71,6 +71,12 @@ public class ProductController {
         return ResultUtils.success(productService.list());
     }
 
+    @GetMapping("/page")
+    public BaseResponse<Page<ProductVO>> pageProducts(@RequestParam(value = "current", defaultValue = "1") long current,
+                                                      @RequestParam(value = "pageSize", defaultValue = "10") long pageSize) {
+        return ResultUtils.success(productService.pagePublicProducts(current, pageSize));
+    }
+
     @GetMapping("/home")
     public BaseResponse<HomeProductVO> home(HttpServletRequest request) {
         return ResultUtils.success(productService.getHomeProductVO(getLoginUserIdOrNull(request)));

@@ -187,6 +187,17 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
+    public Page<ProductVO> pagePublicProducts(long current, long pageSize) {
+        ThrowUtils.throwIf(current <= 0 || pageSize <= 0 || pageSize > 100, ErrorCode.PARAMS_ERROR);
+        Page<ProductVO> page = productMapper.pagePublicProducts(new Page<>(current, pageSize));
+        if (page.getRecords() == null || page.getRecords().isEmpty()) {
+            return page;
+        }
+        page.setRecords(page.getRecords().stream().map(this::buildProductVO).toList());
+        return page;
+    }
+
+    @Override
     public Page<ProductVO> listProductByCategory(Long categoryId, long current, long pageSize) {
         ThrowUtils.throwIf(categoryId == null || categoryId <= 0, ErrorCode.PARAMS_ERROR);
         ThrowUtils.throwIf(current <= 0 || pageSize <= 0 || pageSize > 100, ErrorCode.PARAMS_ERROR);

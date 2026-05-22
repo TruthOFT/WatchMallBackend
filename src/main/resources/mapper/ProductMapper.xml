@@ -160,6 +160,15 @@
         order by p.id desc
     </select>
 
+    <select id="pagePublicProducts" resultType="com.watch.watch_mall.model.vo.ProductVO">
+        select
+        <include refid="Home_Product_Column_List"/>
+        from product p
+        where p.status = 1
+          and p.isDelete = 0
+        order by p.id desc
+    </select>
+
     <select id="pageAdminProducts" resultType="com.watch.watch_mall.model.vo.ProductAdminPageVO">
         select
             p.id,

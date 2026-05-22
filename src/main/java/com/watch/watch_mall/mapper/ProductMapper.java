@@ -32,6 +32,8 @@ public interface ProductMapper extends BaseMapper<Product> {
 
     Page<ProductVO> listProductByCategory(Page<ProductVO> page, @Param("categoryId") Long categoryId);
 
+    Page<ProductVO> pagePublicProducts(Page<ProductVO> page);
+
     Page<ProductAdminPageVO> pageAdminProducts(Page<ProductAdminPageVO> page, @Param("query") ProductAdminQueryRequest query);
 
     List<Long> getCategoryIdListByProductId(@Param("productId") Long productId);

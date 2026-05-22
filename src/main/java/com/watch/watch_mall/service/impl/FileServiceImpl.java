@@ -23,19 +23,15 @@ public class FileServiceImpl implements FileService {
         if (file == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件不能为空");
         }
-
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || !originalFilename.contains(".")) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件名非法");
         }
-
         String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
         String fileName = UUID.randomUUID() + suffix;
-
         try {
             // 项目根目录
             String projectPath = System.getProperty("user.dir");
-
             // upload/{biz}
             File dir = new File(projectPath + "/upload/" + biz);
             if (!dir.exists() && !dir.mkdirs()) {
@@ -44,7 +40,6 @@ public class FileServiceImpl implements FileService {
 
             File dest = new File(dir, fileName);
             file.transferTo(dest);
-
             return contextPath + "/upload/" + biz + "/" + fileName;
 
         } catch (IOException e) {

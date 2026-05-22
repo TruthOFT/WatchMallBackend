@@ -86,6 +86,17 @@ public class CategoryController {
         return ResultUtils.success(categoryService.list());
     }
 
+    @GetMapping("/page")
+    public BaseResponse<Page<Category>> pageCategory(@RequestParam(value = "current", defaultValue = "1") long current,
+                                                     @RequestParam(value = "pageSize", defaultValue = "10") long pageSize) {
+        ThrowUtils.throwIf(current <= 0 || pageSize <= 0 || pageSize > 100, ErrorCode.PARAMS_ERROR);
+        LambdaQueryWrapper<Category> queryWrapper = Wrappers.lambdaQuery(Category.class)
+                .eq(Category::getIsShow, 1)
+                .orderByAsc(Category::getSortOrder)
+                .orderByDesc(Category::getCreateTime);
+        return ResultUtils.success(categoryService.page(new Page<>(current, pageSize), queryWrapper));
+    }
+
     @GetMapping("/products")
     public BaseResponse<Page<ProductVO>> listCategoryProducts(@RequestParam("categoryId") Long categoryId,
                                                               @RequestParam(value = "current", defaultValue = "1") long current,

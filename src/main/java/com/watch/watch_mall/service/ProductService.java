@@ -31,6 +31,8 @@ public interface ProductService extends IService<Product> {
 
     List<ProductVO> listRelatedProducts(Long userId, Long productId, Integer size);
 
+    Page<ProductVO> pagePublicProducts(long current, long pageSize);
+
     Page<ProductVO> listProductByCategory(Long categoryId, long current, long pageSize);
 
     Page<ProductAdminPageVO> pageAdminProducts(ProductAdminQueryRequest queryRequest);

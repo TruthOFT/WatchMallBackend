@@ -63,7 +63,7 @@ public class ProductSearchServiceImpl implements ProductSearchService {
                     .id(String.valueOf(productId))
                     .document(document));
         } catch (IOException e) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "sync product to elasticsearch failed");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "同步索引失败");
         }
     }
 
