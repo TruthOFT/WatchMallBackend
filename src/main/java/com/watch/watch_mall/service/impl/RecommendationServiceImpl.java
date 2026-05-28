@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.watch.watch_mall.mapper.CartItemMapper;
 import com.watch.watch_mall.mapper.ProductFavoriteMapper;
 import com.watch.watch_mall.mapper.ProductMapper;
-import com.watch.watch_mall.mapper.ProductReviewMapper;
 import com.watch.watch_mall.mapper.ProductSimilarityMapper;
 import com.watch.watch_mall.mapper.ProductViewLogMapper;
 import com.watch.watch_mall.mapper.UserProductPreferenceMapper;
@@ -14,7 +13,6 @@ import com.watch.watch_mall.model.dto.product.ProductViewTrackRequest;
 import com.watch.watch_mall.model.entity.CartItem;
 import com.watch.watch_mall.model.entity.Product;
 import com.watch.watch_mall.model.entity.ProductFavorite;
-import com.watch.watch_mall.model.entity.ProductReview;
 import com.watch.watch_mall.model.entity.ProductSimilarity;
 import com.watch.watch_mall.model.entity.ProductViewLog;
 import com.watch.watch_mall.model.entity.UserProductPreference;
@@ -66,9 +64,6 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     @Resource
     private CartItemMapper cartItemMapper;
-
-    @Resource
-    private ProductReviewMapper productReviewMapper;
 
     @Resource
     private UserProductPreferenceMapper userProductPreferenceMapper;
@@ -147,19 +142,6 @@ public class RecommendationServiceImpl implements RecommendationService {
             accumulator.lastBehaviorTime = maxDate(accumulator.lastBehaviorTime, cartItem.getCreateTime());
         }
 
-        List<ProductReview> reviews = productReviewMapper.selectList(Wrappers.lambdaQuery(ProductReview.class)
-                .eq(ProductReview::getIsDelete, 0)
-                .eq(ProductReview::getStatus, 1));
-        for (ProductReview review : reviews) {
-            if (review.getUserId() == null || review.getProductId() == null) {
-                continue;
-            }
-            String key = buildUserProductKey(review.getUserId(), review.getProductId());
-            PreferenceAccumulator accumulator = scoreMap.computeIfAbsent(key, item -> new PreferenceAccumulator());
-            int reviewScore = Math.max(defaultInt(review.getScore()), 0) * 2;
-            accumulator.reviewScore = Math.max(accumulator.reviewScore, reviewScore);
-            accumulator.lastBehaviorTime = maxDate(accumulator.lastBehaviorTime, review.getCreateTime());
-        }
         // 遍历偏好数据映射，构建用户-商品偏好数据，计算偏好分数，插入数据库
         for (Map.Entry<String, PreferenceAccumulator> entry : scoreMap.entrySet()) {
             String[] ids = entry.getKey().split("_");
@@ -167,7 +149,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             Long productId = Long.parseLong(ids[1]);
             PreferenceAccumulator accumulator = entry.getValue();
             int viewScore = Math.min(accumulator.viewCount, 3);
-            int preferenceScore = viewScore + accumulator.favoriteScore + accumulator.cartScore + accumulator.reviewScore;
+            int preferenceScore = viewScore + accumulator.favoriteScore + accumulator.cartScore;
             if (preferenceScore <= 0) {
                 continue;
             }
@@ -178,7 +160,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             entity.setViewCount(accumulator.viewCount);
             entity.setFavoriteScore(BigDecimal.valueOf(accumulator.favoriteScore));
             entity.setCartScore(BigDecimal.valueOf(accumulator.cartScore));
-            entity.setReviewScore(BigDecimal.valueOf(accumulator.reviewScore));
+            entity.setReviewScore(BigDecimal.ZERO);
             entity.setPreferenceScore(BigDecimal.valueOf(preferenceScore));
             entity.setLastBehaviorTime(accumulator.lastBehaviorTime);
             entity.setIsDelete(0);
@@ -548,12 +530,6 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .eq(ProductFavorite::getIsDelete, 0))) {
             hotScoreMap.merge(favorite.getProductId(), 4, Integer::sum);
         }
-        for (ProductReview review : productReviewMapper.selectList(Wrappers.lambdaQuery(ProductReview.class)
-                .eq(ProductReview::getIsDelete, 0)
-                .eq(ProductReview::getStatus, 1))) {
-            hotScoreMap.merge(review.getProductId(), 2, Integer::sum);
-        }
-
         // 这里的 stream 是对兜底商品做过滤、热度排序、截断，再转成最终需要加载的商品 id。
         return activeProducts.stream()
                 .filter(product -> product.getId() != null && !excludeIds.contains(product.getId()))
@@ -697,7 +673,6 @@ public class RecommendationServiceImpl implements RecommendationService {
         private int viewCount;
         private int favoriteScore;
         private int cartScore;
-        private int reviewScore;
         private Date lastBehaviorTime;
     }
 }

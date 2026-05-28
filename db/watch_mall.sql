@@ -1158,34 +1158,6 @@ INSERT INTO `product_images` VALUES (3000000000000000007, 1700000000010020007, '
 INSERT INTO `product_images` VALUES (3000000000000000008, 1700000000010020008, '/api/upload/product/e4aaf478-f27a-4975-9167-433f0427954a.png', 1, 0, '2026-02-01 22:23:39');
 
 -- ----------------------------
--- Table structure for product_review
--- ----------------------------
-DROP TABLE IF EXISTS `product_review`;
-CREATE TABLE `product_review`  (
-  `id` bigint UNSIGNED NOT NULL COMMENT '评价id',
-  `userId` bigint UNSIGNED NOT NULL COMMENT '用户id',
-  `productId` bigint UNSIGNED NOT NULL COMMENT '商品id',
-  `orderId` bigint UNSIGNED NULL DEFAULT NULL COMMENT '订单id',
-  `orderItemId` bigint UNSIGNED NULL DEFAULT NULL COMMENT '订单项id',
-  `score` tinyint UNSIGNED NOT NULL COMMENT '评分 1-5',
-  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL COMMENT '评价内容',
-  `isAnonymous` tinyint(1) NULL DEFAULT 0 COMMENT '是否匿名',
-  `status` tinyint UNSIGNED NULL DEFAULT 0 COMMENT '状态 0待审核 1已展示 2已隐藏',
-  `createTime` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updateTime` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `isDelete` tinyint(1) NULL DEFAULT 0,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_product_review_orderItemId`(`orderItemId` ASC) USING BTREE,
-  INDEX `idx_product_review_productId`(`productId` ASC, `status` ASC, `isDelete` ASC, `createTime` ASC) USING BTREE,
-  INDEX `idx_product_review_userId`(`userId` ASC, `isDelete` ASC, `createTime` ASC) USING BTREE,
-  INDEX `idx_product_review_orderId`(`orderId` ASC) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '商品评价表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of product_review
--- ----------------------------
-
--- ----------------------------
 -- Table structure for product_similarity
 -- ----------------------------
 DROP TABLE IF EXISTS `product_similarity`;
